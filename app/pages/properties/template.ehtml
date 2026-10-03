@@ -1,0 +1,349 @@
+import "./style.css";
+import { FieldErrors, ValidationError } from "@elements/app";
+import favicon from "#app/shared/assets/favicons/favicon.svg";
+import { AppShell } from "#app/shared/templates/app-shell";
+import { ordinal, rent, day } from "#app/shared/format";
+import {
+  BuildingForm,
+  BuildingRow,
+  InviteForm,
+  UnitForm,
+  UnitRow,
+  addBuilding,
+  addUnit,
+  cancelInvite,
+  inviteTenant,
+  resendInvite,
+} from "./services";
+
+interface State {
+  buildings: BuildingRow[];
+  inviting: string;
+  addingUnit: string;
+  addingBuilding: boolean;
+  links: Record<string, string>;
+  copied: string;
+  notice: string;
+  error: string;
+}
+
+function firstOfNextMonth(): string {
+  let d = new Date();
+  let next = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+
+  return `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}-01`;
+}
+
+function emptyInvite(unitId: string): InviteForm {
+  return { unitId, name: "", email: "", rent: 0, dueDay: 1, startDate: firstOfNextMonth() };
+}
+
+function allUnits(state: State): UnitRow[] {
+  return state.buildings.flatMap((b) => b.units);
+}
+
+function occupied(state: State): number {
+  return allUnits(state).filter((u) => u.leaseStatus === "active").length;
+}
+
+function monthlyRent(state: State): number {
+  return allUnits(state).filter((u) => u.leaseStatus === "active").reduce((sum, u) => sum + (u.rentCents ?? 0), 0);
+}
+
+function linkFor(state: State, unit: UnitRow): string {
+  if (unit.leaseId && state.links[unit.leaseId]) {
+    return state.links[unit.leaseId];
+  }
+
+  return unit.inviteId ? `${location.origin}/invite/${unit.inviteId}` : "";
+}
+
+function onInvite(state: State, form: InviteForm): FieldErrors<InviteForm> {
+  state.error = "";
+
+  try {
+    let result = inviteTenant(form);
+    let unit = result.buildings.flatMap((b) => b.units).find((u) => u.id === form.unitId);
+
+    state.buildings = result.buildings;
+    state.inviting = "";
+    state.notice = `Invite sent to ${form.email}. You can also share the link below.`;
+
+    if (unit?.leaseId) {
+      state.links[unit.leaseId] = result.url;
+    }
+
+    return {};
+  } catch (err: any) {
+    if (err instanceof ValidationError && err.errors) {
+      return err.errors;
+    }
+
+    state.error = err.message;
+    return {};
+  }
+}
+
+function onResend(state: State, unit: UnitRow) {
+  state.error = "";
+
+  try {
+    let result = resendInvite(unit.leaseId!);
+    state.buildings = result.buildings;
+    state.links[unit.leaseId!] = result.url;
+    state.notice = `A fresh invite is on its way to ${unit.tenantEmail}.`;
+  } catch (err: any) {
+    state.error = err.message;
+  }
+}
+
+function onCancel(state: State, unit: UnitRow) {
+  state.error = "";
+
+  try {
+    state.buildings = cancelInvite(unit.leaseId!);
+    state.notice = `Invite for ${unit.tenantName} cancelled. Unit ${unit.label} is vacant again.`;
+  } catch (err: any) {
+    state.error = err.message;
+  }
+}
+
+async function onCopy(state: State, url: string, key: string) {
+  await navigator.clipboard.writeText(url);
+  state.copied = key;
+}
+
+function onAddUnit(state: State, form: UnitForm): FieldErrors<UnitForm> {
+  try {
+    state.buildings = addUnit(form);
+    state.addingUnit = "";
+    return {};
+  } catch (err: any) {
+    if (err instanceof ValidationError && err.errors) {
+      return err.errors;
+    }
+
+    state.error = err.message;
+    return {};
+  }
+}
+
+function onAddBuilding(state: State, form: BuildingForm): FieldErrors<BuildingForm> {
+  try {
+    state.buildings = addBuilding(form);
+    state.addingBuilding = false;
+    return {};
+  } catch (err: any) {
+    if (err instanceof ValidationError && err.errors) {
+      return err.errors;
+    }
+
+    state.error = err.message;
+    return {};
+  }
+}
+
+<InviteRow (state: State, unit: UnitRow, private form: InviteForm = emptyInvite(unit.id), private errors: FieldErrors<InviteForm> = {})>
+  <tr class="invite-row">
+    <td colspan={6}>
+      <form class="invite-form" onsubmit={() => errors = onInvite(state, form)}>
+        <div class="field">
+          <label for={`name-${unit.id}`}>Tenant name</label>
+          <input id={`name-${unit.id}`} value={form.name} autocomplete="off" class={[!!errors.name?.length && "is-error"]}>
+          <p e:for={m of errors.name ?? []} class="error">{m}</p>
+        </div>
+        <div class="field">
+          <label for={`email-${unit.id}`}>Email</label>
+          <input id={`email-${unit.id}`} type="email" value={form.email} autocapitalize="none" spellcheck={false} class={[!!errors.email?.length && "is-error"]}>
+          <p e:for={m of errors.email ?? []} class="error">{m}</p>
+        </div>
+        <div class="field">
+          <label for={`rent-${unit.id}`}>Monthly rent ($)</label>
+          <input id={`rent-${unit.id}`} type="number" min="1" step="1" value={form.rent} class={[!!errors.rent?.length && "is-error"]}>
+          <p e:for={m of errors.rent ?? []} class="error">{m}</p>
+        </div>
+        <div class="field">
+          <label for={`due-${unit.id}`}>Rent due on day</label>
+          <input id={`due-${unit.id}`} type="number" min="1" max="28" value={form.dueDay} class={[!!errors.dueDay?.length && "is-error"]}>
+          <p e:for={m of errors.dueDay ?? []} class="error">{m}</p>
+        </div>
+        <div class="field">
+          <label for={`start-${unit.id}`}>Lease starts</label>
+          <input id={`start-${unit.id}`} type="date" value={form.startDate} class={[!!errors.startDate?.length && "is-error"]}>
+          <p e:for={m of errors.startDate ?? []} class="error">{m}</p>
+        </div>
+        <div class="field row is-end" style="justify-content: flex-end; gap: var(--space-2)">
+          <button type="button" class="is-ghost" onclick={() => state.inviting = ""}>Cancel</button>
+          <button type="submit" class="is-primary">Send invite</button>
+        </div>
+      </form>
+    </td>
+  </tr>
+</InviteRow>
+
+<UnitLine (state: State, unit: UnitRow)>
+  <tr>
+    <td>
+      <span class="unit-label">{unit.label}</span>
+      <span class="unit-size">{unit.bedrooms} bd · {unit.bathrooms} ba</span>
+    </td>
+    <td>
+      <div e:if={unit.leaseStatus} class="tenant-cell">
+        <span>{unit.tenantName}</span>
+        <small>{unit.tenantEmail}</small>
+      </div>
+      <span e:else class="vacant">Vacant</span>
+    </td>
+    <td class="num hide-sm">{unit.rentCents ? rent(unit.rentCents) : ""}</td>
+    <td class="hide-sm">{unit.dueDay ? `The ${ordinal(unit.dueDay)}` : ""}</td>
+    <td>
+      <div class="cluster is-xs">
+        <span e:if={unit.leaseStatus === "active"} class="pill is-success">Active</span>
+        <span e:elseif={unit.leaseStatus === "invited"} class="pill is-warning">Invited</span>
+        <span e:else class="pill">Vacant</span>
+        <span e:if={unit.autopay} class="pill is-accent">Autopay</span>
+        <span e:if={unit.owedCents > 0} class="pill is-danger">Owes {rent(unit.owedCents)}</span>
+        <a e:if={unit.openRequests > 0} class="pill is-info" href="/landlord/maintenance">{unit.openRequests} open {unit.openRequests === 1 ? "repair" : "repairs"}</a>
+      </div>
+    </td>
+    <td>
+      <div class="unit-actions row">
+        <button e:if={!unit.leaseStatus && state.inviting !== unit.id} class="is-sm is-primary" onclick={() => state.inviting = unit.id}>
+          Invite tenant
+        </button>
+        <span e:if={unit.leaseStatus === "active" && unit.startDate} class="hint">Since {day(unit.startDate!, true)}</span>
+        <button e:if={unit.leaseStatus === "invited"} class="is-sm" onclick={() => onResend(state, unit)}>Resend</button>
+        <button e:if={unit.leaseStatus === "invited"} class="is-sm is-ghost" onclick={() => onCancel(state, unit)}>Cancel</button>
+      </div>
+    </td>
+  </tr>
+  <tr e:if={unit.leaseStatus === "invited" && linkFor(state, unit)} class="invite-row">
+    <td colspan={6}>
+      <div class="invite-link row">
+        <span class="hint">Invite link</span>
+        <code>{linkFor(state, unit)}</code>
+        <button class="is-sm" onclick={() => onCopy(state, linkFor(state, unit), unit.id)}>
+          {state.copied === unit.id ? "Copied" : "Copy"}
+        </button>
+      </div>
+    </td>
+  </tr>
+  <InviteRow e:if={state.inviting === unit.id} {state} {unit} />
+</UnitLine>
+
+<AddUnit (state: State, building: BuildingRow, private form: UnitForm = { buildingId: building.id, label: "", bedrooms: 1, bathrooms: 1 }, private errors: FieldErrors<UnitForm> = {})>
+  <form class="inline-form" onsubmit={() => errors = onAddUnit(state, form)}>
+    <div class="field">
+      <label for={`unit-${building.id}`}>Unit</label>
+      <input id={`unit-${building.id}`} value={form.label} placeholder="e.g. 3B" class={[!!errors.label?.length && "is-error"]}>
+      <p e:for={m of errors.label ?? []} class="error">{m}</p>
+    </div>
+    <div class="field">
+      <label for={`beds-${building.id}`}>Bedrooms</label>
+      <input id={`beds-${building.id}`} type="number" min="0" max="10" value={form.bedrooms}>
+      <p e:for={m of errors.bedrooms ?? []} class="error">{m}</p>
+    </div>
+    <div class="field">
+      <label for={`baths-${building.id}`}>Bathrooms</label>
+      <input id={`baths-${building.id}`} type="number" min="0.5" max="10" step="0.5" value={form.bathrooms}>
+      <p e:for={m of errors.bathrooms ?? []} class="error">{m}</p>
+    </div>
+    <div class="row" style="gap: var(--space-2)">
+      <button type="button" class="is-ghost" onclick={() => state.addingUnit = ""}>Cancel</button>
+      <button type="submit" class="is-primary">Add unit</button>
+    </div>
+  </form>
+</AddUnit>
+
+<AddBuilding (state: State, private form: BuildingForm = { name: "", address: "" }, private errors: FieldErrors<BuildingForm> = {})>
+  <section class="card">
+    <div class="card-head">
+      <h2>New building</h2>
+    </div>
+    <form class="card-body building-form" onsubmit={() => errors = onAddBuilding(state, form)}>
+      <div class="field">
+        <label for="building-name">Name</label>
+        <input id="building-name" value={form.name} placeholder="e.g. Cedar Flats" class={[!!errors.name?.length && "is-error"]}>
+        <p e:for={m of errors.name ?? []} class="error">{m}</p>
+      </div>
+      <div class="field">
+        <label for="building-address">Address</label>
+        <input id="building-address" value={form.address} placeholder="Street address" class={[!!errors.address?.length && "is-error"]}>
+        <p e:for={m of errors.address ?? []} class="error">{m}</p>
+      </div>
+      <div class="row" style="gap: var(--space-2)">
+        <button type="button" class="is-ghost" onclick={() => state.addingBuilding = false}>Cancel</button>
+        <button type="submit" class="is-primary">Add building</button>
+      </div>
+    </form>
+  </section>
+</AddBuilding>
+
+<html lang="en" class="page-properties" (
+  initial: BuildingRow[],
+  private state: State = { buildings: initial, inviting: "", addingUnit: "", addingBuilding: false, links: {}, copied: "", notice: "", error: "" },
+)>
+  <head>
+    <title>Properties · Leaseleaf</title>
+    <link rel="icon" type="image/svg+xml" href={favicon} />
+  </head>
+  <body>
+    <AppShell active="properties">
+      <div class="page-shell is-wide stack is-xl">
+        <div class="props-head row">
+          <div class="stack is-xs">
+            <p class="eyebrow">Properties</p>
+            <h1>Buildings and units</h1>
+            <div class="props-summary cluster">
+              <span><strong>{state.buildings.length}</strong> buildings</span>
+              <span><strong>{occupied(state)}</strong> of {allUnits(state).length} units leased</span>
+              <span><strong>{rent(monthlyRent(state))}</strong> monthly rent</span>
+            </div>
+          </div>
+          <button e:if={!state.addingBuilding} onclick={() => state.addingBuilding = true}>Add building</button>
+        </div>
+
+        <div e:if={state.notice} class="callout is-success" role="status">
+          <div class="callout-body">{state.notice}</div>
+        </div>
+        <div e:if={state.error} class="callout is-danger" role="alert">
+          <div class="callout-body">{state.error}</div>
+        </div>
+
+        <AddBuilding e:if={state.addingBuilding} {state} />
+
+        <section e:for={building of state.buildings} class="card">
+          <div class="card-head building-head row">
+            <div class="stack is-xs">
+              <h2>{building.name}</h2>
+              <span class="building-address">{building.address}</span>
+            </div>
+            <button e:if={state.addingUnit !== building.id} class="is-sm is-ghost" onclick={() => state.addingUnit = building.id}>Add unit</button>
+          </div>
+          <div class="card-body stack">
+            <AddUnit e:if={state.addingUnit === building.id} {state} {building} />
+
+            <div class="overflow-auto" e:if={building.units.length > 0}>
+              <table class="unit-table">
+                <thead>
+                  <tr>
+                    <th>Unit</th>
+                    <th>Tenant</th>
+                    <th class="num hide-sm">Rent</th>
+                    <th class="hide-sm">Due</th>
+                    <th>Status</th>
+                    <th><span class="visually-hidden">Actions</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <UnitLine e:for={unit of building.units} {state} {unit} />
+                </tbody>
+              </table>
+            </div>
+            <p e:else class="hint">No units yet. Add the first one.</p>
+          </div>
+        </section>
+      </div>
+    </AppShell>
+  </body>
+</html>

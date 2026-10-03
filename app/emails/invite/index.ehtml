@@ -1,0 +1,24 @@
+import "./style.css";
+
+/** @email */
+<html (tenantName: string, landlordName: string, place: string, rent: string, dueDay: string, acceptUrl: string)>
+  <body class="email invite">
+    <div class="email-wrap">
+      <p class="email-brand">leaseleaf</p>
+      <h1>Welcome to {place}, {tenantName}</h1>
+      <p>{landlordName} has set up your lease on Leaseleaf. You can pay rent by card, turn on autopay and send maintenance requests from one place.</p>
+
+      <div class="email-box">
+        <p><strong>{place}</strong></p>
+        <p>{rent} a month, due on the {dueDay}</p>
+      </div>
+
+      <p><a class="email-button" href={acceptUrl}>Accept your invite</a></p>
+      <p>The link works for 14 days. If it has expired, ask {landlordName} to send a new one.</p>
+
+      <div class="email-footer">
+        <p>Sent by Leaseleaf for {landlordName}.</p>
+      </div>
+    </div>
+  </body>
+</html>

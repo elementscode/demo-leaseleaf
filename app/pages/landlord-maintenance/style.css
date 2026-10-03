@@ -1,0 +1,52 @@
+@import "#app/shared/styles/page.css";
+
+.board-head {
+  justify-content: space-between;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-5);
+  align-items: start;
+}
+
+.lane {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-surface);
+  background: var(--bg-soft);
+  border: 1px solid var(--rule);
+}
+
+.lane-head {
+  justify-content: space-between;
+}
+
+.lane-head h2 {
+  margin: 0;
+  font-size: var(--text-md);
+}
+
+.lane-count {
+  font-variant-numeric: tabular-nums;
+}
+
+.lane-empty {
+  padding: var(--space-6) var(--space-3);
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--ink-soft);
+  border: 1px dashed var(--rule);
+  border-radius: var(--radius-md);
+}
+
+@media (max-width: 64rem) {
+  .board {
+    grid-template-columns: 1fr;
+  }
+}

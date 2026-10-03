@@ -1,0 +1,55 @@
+import "./style.css";
+import { RequestRow, URGENCY_LABEL, photoUrl } from "#app/shared/services/maintenance";
+import { day, when } from "#app/shared/format";
+
+<UrgencyPill (urgency: RequestRow["urgency"])>
+  <span e:switch={urgency}>
+    <span e:case="urgent" class="pill is-danger"><span class="pill-dot"></span>Urgent</span>
+    <span e:case="normal" class="pill">Normal</span>
+    <span e:default class="pill">{URGENCY_LABEL[urgency]}</span>
+  </span>
+</UrgencyPill>
+
+<StatusPill (status: RequestRow["status"])>
+  <span e:switch={status}>
+    <span e:case="new" class="pill is-warning"><span class="pill-dot"></span>New</span>
+    <span e:case="scheduled" class="pill is-info"><span class="pill-dot"></span>Scheduled</span>
+    <span e:default class="pill is-success"><span class="pill-dot"></span>Done</span>
+  </span>
+</StatusPill>
+
+<RequestCard (request: RequestRow, showTenant: boolean = true, showStatus: boolean = false)>
+  <a class={["request-card", request.urgency === "urgent" && request.status !== "done" && "is-urgent"]}
+     href={`/maintenance/${request.id}`}>
+    <img e:if={request.photos.length > 0}
+         class="request-thumb"
+         src={photoUrl(request.photos[0])}
+         alt=""
+         width="72"
+         height="72"
+         loading="lazy">
+    <span e:else class="request-thumb is-empty">
+      <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L4 17l3 3 5.3-5.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"/>
+      </svg>
+    </span>
+
+    <span class="stack is-xs min-w-0">
+      <span class="request-card-title">{request.title}</span>
+      <span class="request-card-meta cluster">
+        <span e:if={showTenant}>{request.tenantName} · {request.buildingName} {request.unitLabel}</span>
+        <span>{when(request.createdAt)}</span>
+        <span e:if={request.status === "scheduled" && request.scheduledFor}>Visit {day(request.scheduledFor!)}</span>
+        <span e:if={request.commentCount > 0}>
+          <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor"><path d="M2 3a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H7l-3.5 3V11H4a2 2 0 0 1-2-2z"/></svg>
+          {request.commentCount}
+        </span>
+        <span e:if={request.photos.length > 1}>{request.photos.length} photos</span>
+      </span>
+      <span class="cluster is-xs">
+        <StatusPill e:if={showStatus} status={request.status} />
+        <UrgencyPill e:if={request.urgency !== "normal" || !showStatus} urgency={request.urgency} />
+      </span>
+    </span>
+  </a>
+</RequestCard>

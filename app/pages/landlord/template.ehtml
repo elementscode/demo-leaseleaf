@@ -1,0 +1,214 @@
+import "./style.css";
+import { LiveView } from "@elements/app";
+import favicon from "#app/shared/assets/favicons/favicon.svg";
+import { AppShell } from "#app/shared/templates/app-shell";
+import { RentStatus, METHOD_LABEL, paidOn } from "#app/shared/templates/rent-status";
+import { RentRow } from "#app/shared/services/rent";
+import { day, monthName, rent } from "#app/shared/format";
+import { OFFLINE_METHODS, OfflineMethod, recordPayment, runRentCycle } from "./services";
+
+interface Ui {
+  month: string;
+  notice: string;
+  error: string;
+  busy: boolean;
+}
+
+function months(charges: LiveView<RentRow>): string[] {
+  return [...new Set(charges.map((c) => c.month))].sort();
+}
+
+function rows(charges: LiveView<RentRow>, month: string): RentRow[] {
+  return charges
+    .filter((c) => c.month === month)
+    .sort((a, b) => a.buildingName.localeCompare(b.buildingName) || a.unitLabel.localeCompare(b.unitLabel, undefined, { numeric: true }));
+}
+
+function earlierOwed(charges: LiveView<RentRow>, month: string): RentRow[] {
+  return charges
+    .filter((c) => c.month < month && c.state === "late")
+    .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+}
+
+function lateList(charges: LiveView<RentRow>, month: string): RentRow[] {
+  return charges.filter((c) => c.month <= month && c.state === "late");
+}
+
+function total(list: RentRow[], state?: RentRow["state"][]): number {
+  return list.filter((c) => !state || state.includes(c.state)).reduce((sum, c) => sum + c.amountCents, 0);
+}
+
+function count(list: RentRow[], state: RentRow["state"]): number {
+  return list.filter((c) => c.state === state).length;
+}
+
+function onRecord(ui: Ui, row: RentRow, method: OfflineMethod) {
+  ui.error = "";
+
+  try {
+    recordPayment(row.id, method);
+    ui.notice = `Recorded ${rent(row.amountCents)} from ${row.tenantName} by ${METHOD_LABEL[method].toLowerCase()}.`;
+  } catch (err: any) {
+    ui.error = err.message;
+  }
+}
+
+function onRunCycle(ui: Ui) {
+  ui.busy = true;
+  ui.error = "";
+
+  try {
+    runRentCycle();
+    ui.notice = "Today's rent run is going now: new charges, autopay, reminders due in three days and late notices.";
+  } catch (err: any) {
+    ui.error = err.message;
+  }
+
+  ui.busy = false;
+}
+
+<RollRow (row: RentRow, ui: Ui, showMonth: boolean = false)>
+  <tr class={[row.state === "late" && "is-late"]}>
+    <td>
+      <span class="roll-unit">{row.unitLabel}</span>
+      <span class="roll-building">{row.buildingName}</span>
+      <span class="roll-who">{row.tenantName}</span>
+    </td>
+    <td class="roll-tenant-cell">
+      <span class="roll-tenant row">
+        {row.tenantName}
+        <span e:if={row.autopay} class="pill is-accent" title="Autopay is on">Autopay</span>
+      </span>
+    </td>
+    <td class="num">{rent(row.amountCents)}</td>
+    <td class="hide-sm">{showMonth ? monthName(row.month, true) : day(row.dueDate)}</td>
+    <td><RentStatus {row} /></td>
+    <td class="hide-sm text-ink-soft">
+      {row.paidAt ? `${paidOn(row)} · ${METHOD_LABEL[row.method ?? "card"] ?? row.method}` : ""}
+    </td>
+    <td class="num">
+      <details e:if={row.state === "due" || row.state === "late"} class="record">
+        <summary>Record<span class="hide-sm"> payment</span></summary>
+        <div class="record-menu">
+          <button e:for={m of OFFLINE_METHODS} type="button" class="is-ghost is-sm" onclick={() => onRecord(ui, row, m)}>
+            Paid by {METHOD_LABEL[m].toLowerCase()}
+          </button>
+        </div>
+      </details>
+    </td>
+  </tr>
+</RollRow>
+
+<RollTable (list: RentRow[], ui: Ui, showMonth: boolean = false)>
+  <div class="overflow-auto">
+    <table class="roll-table">
+      <thead>
+        <tr>
+          <th>Unit</th>
+          <th class="roll-tenant-cell">Tenant</th>
+          <th class="num">Rent</th>
+          <th class="hide-sm">{showMonth ? "Month" : "Due"}</th>
+          <th>Status</th>
+          <th class="hide-sm">Paid</th>
+          <th><span class="visually-hidden">Actions</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <RollRow e:for={row of list} {row} {ui} {showMonth} />
+      </tbody>
+    </table>
+  </div>
+</RollTable>
+
+<html lang="en" class="page-landlord" (
+  charges: LiveView<RentRow>,
+  month: string,
+  private ui: Ui = { month, notice: "", error: "", busy: false },
+)>
+  <head>
+    <title>Rent roll · Leaseleaf</title>
+    <link rel="icon" type="image/svg+xml" href={favicon} />
+  </head>
+  <body>
+    <AppShell active="rent">
+      <div class="page-shell is-wide stack is-xl">
+        <div class="roll-head row">
+          <div class="stack is-xs">
+            <p class="eyebrow">Rent roll</p>
+            <h1>{monthName(ui.month)}</h1>
+          </div>
+          <button class="is-sm" disabled={ui.busy} onclick={() => onRunCycle(ui)}>
+            Send due reminders and late notices now
+          </button>
+        </div>
+
+        <div e:if={ui.notice} class="callout is-success" role="status">
+          <div class="callout-body">{ui.notice}</div>
+        </div>
+        <div e:if={ui.error} class="callout is-danger" role="alert">
+          <div class="callout-body">{ui.error}</div>
+        </div>
+
+        <div class="roll-tabs tabs">
+          <div class="tab-list" role="tablist">
+            <button e:for={m of months(charges)}
+                    type="button"
+                    role="tab"
+                    aria-selected={m === ui.month}
+                    class={["tab", m === ui.month && "is-active"]}
+                    onclick={() => ui.month = m}>
+              {monthName(m, true)}
+            </button>
+          </div>
+        </div>
+
+        <div class="stats">
+          <div class="stat card">
+            <span class="stat-label">Collected</span>
+            <span class="stat-value">{rent(total(rows(charges, ui.month), ["paid"]))}</span>
+            <progress value={total(rows(charges, ui.month), ["paid"])} max={total(rows(charges, ui.month)) || 1}></progress>
+            <span class="hint">of {rent(total(rows(charges, ui.month)))} expected</span>
+          </div>
+          <div class="stat card">
+            <span class="stat-label">Paid</span>
+            <span class="stat-value">{count(rows(charges, ui.month), "paid")} <span class="text-ink-soft text-base">of {rows(charges, ui.month).length}</span></span>
+            <span class="hint">{count(rows(charges, ui.month), "processing") > 0 ? `${count(rows(charges, ui.month), "processing")} processing` : "units"}</span>
+          </div>
+          <div class="stat card">
+            <span class="stat-label">Due</span>
+            <span class="stat-value">{rent(total(rows(charges, ui.month), ["due"]))}</span>
+            <span class="hint">{count(rows(charges, ui.month), "due")} not yet due</span>
+          </div>
+          <div class="stat card">
+            <span class="stat-label">Late</span>
+            <span class={["stat-value", lateList(charges, ui.month).length > 0 && "is-danger"]}>
+              {rent(total(lateList(charges, ui.month)))}
+            </span>
+            <span class="hint">{lateList(charges, ui.month).length} past due, earlier months included</span>
+          </div>
+        </div>
+
+        <section class="card">
+          <div class="card-head row" style="justify-content: space-between">
+            <h2>{monthName(ui.month)}</h2>
+            <span class="hint">Updates live as tenants pay</span>
+          </div>
+          <div class="card-body">
+            <RollTable list={rows(charges, ui.month)} {ui} />
+            <p e:if={rows(charges, ui.month).length === 0} class="hint">No charges for this month.</p>
+          </div>
+        </section>
+
+        <section e:if={earlierOwed(charges, ui.month).length > 0} class="card">
+          <div class="card-head row" style="justify-content: space-between">
+            <h2>Still owed from earlier months</h2>
+            <span class="pill is-danger">{rent(total(earlierOwed(charges, ui.month)))}</span>
+          </div>
+          <div class="card-body">
+            <RollTable list={earlierOwed(charges, ui.month)} {ui} showMonth={true} />
+          </div>
+        </section>
+      </div>
+    </AppShell>
+  </body>
+</html>

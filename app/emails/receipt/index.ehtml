@@ -1,0 +1,23 @@
+import "./style.css";
+
+/** @email */
+<html (tenantName: string, amount: string, month: string, place: string, paidAt: string, method: string)>
+  <body class="email receipt">
+    <div class="email-wrap">
+      <p class="email-brand">leaseleaf</p>
+      <h1>Rent received. Thank you!</h1>
+      <p>Hi {tenantName}, your {month} rent for {place} is paid.</p>
+
+      <div class="email-box">
+        <p class="email-amount">{amount}</p>
+        <p>Paid {paidAt} by {method}</p>
+      </div>
+
+      <p><a href="/tenant">See your payment history</a></p>
+
+      <div class="email-footer">
+        <p>Sent by Leaseleaf. Card payments are processed by Stripe.</p>
+      </div>
+    </div>
+  </body>
+</html>

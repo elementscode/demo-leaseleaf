@@ -1,0 +1,20 @@
+import "./style.css";
+
+/** @email */
+<html (tenantName: string, title: string, headline: string, comment: string, landlordName: string, url: string)>
+  <body class="email maintenance-update">
+    <div class="email-wrap">
+      <p class="email-brand">leaseleaf</p>
+      <h1>{headline}</h1>
+      <p>Hi {tenantName}, there is an update on your request <strong>{title}</strong>.</p>
+
+      <p e:if={comment} class="email-quote">{comment}<br>{landlordName}</p>
+
+      <p><a class="email-button" href={url}>View the request</a></p>
+
+      <div class="email-footer">
+        <p>Sent by Leaseleaf for {landlordName}.</p>
+      </div>
+    </div>
+  </body>
+</html>

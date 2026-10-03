@@ -1,0 +1,67 @@
+import "./style.css";
+import { LiveView } from "@elements/app";
+import favicon from "#app/shared/assets/favicons/favicon.svg";
+import { AppShell } from "#app/shared/templates/app-shell";
+import { RequestCard } from "#app/shared/templates/request-card";
+import { RequestRow, RequestStatus, STATUSES, STATUS_LABEL } from "#app/shared/services/maintenance";
+
+const URGENCY_RANK = { urgent: 0, normal: 1, low: 2 };
+
+const EMPTY: Record<RequestStatus, string> = {
+  new: "Nothing new. Tenants' requests land here.",
+  scheduled: "No visits booked.",
+  done: "Nothing finished yet.",
+};
+
+/** New and scheduled work sorts by urgency, then age; done work by when it finished. */
+function lane(requests: LiveView<RequestRow>, status: RequestStatus): RequestRow[] {
+  let list = requests.filter((r) => r.status === status);
+
+  if (status === "done") {
+    return list.sort((a, b) => +(b.completedAt ?? b.updatedAt) - +(a.completedAt ?? a.updatedAt)).slice(0, 12);
+  }
+
+  if (status === "scheduled") {
+    return list.sort((a, b) => (a.scheduledFor ?? "").localeCompare(b.scheduledFor ?? ""));
+  }
+
+  return list.sort((a, b) => URGENCY_RANK[a.urgency] - URGENCY_RANK[b.urgency] || +a.createdAt - +b.createdAt);
+}
+
+function urgentOpen(requests: LiveView<RequestRow>): number {
+  return requests.filter((r) => r.urgency === "urgent" && r.status !== "done").length;
+}
+
+<html lang="en" class="page-landlord-maintenance" (requests: LiveView<RequestRow>)>
+  <head>
+    <title>Maintenance · Leaseleaf</title>
+    <link rel="icon" type="image/svg+xml" href={favicon} />
+  </head>
+  <body>
+    <AppShell active="maintenance">
+      <div class="page-shell is-wide stack is-xl">
+        <div class="board-head row">
+          <div class="stack is-xs">
+            <p class="eyebrow">Maintenance</p>
+            <h1>Repair queue</h1>
+          </div>
+          <div class="cluster is-sm">
+            <span e:if={urgentOpen(requests) > 0} class="pill is-danger"><span class="pill-dot"></span>{urgentOpen(requests)} urgent</span>
+            <span class="pill">{requests.filter((r) => r.status !== "done").length} open</span>
+          </div>
+        </div>
+
+        <div class="board">
+          <section e:for={status of STATUSES} class="lane" aria-label={STATUS_LABEL[status]}>
+            <div class="lane-head row">
+              <h2>{STATUS_LABEL[status]}</h2>
+              <span class="lane-count pill">{requests.filter((r) => r.status === status).length}</span>
+            </div>
+            <RequestCard e:for={r of lane(requests, status)} request={r} />
+            <p e:if={lane(requests, status).length === 0} class="lane-empty">{EMPTY[status]}</p>
+          </section>
+        </div>
+      </div>
+    </AppShell>
+  </body>
+</html>
