@@ -1,0 +1,76 @@
+@import "#app/shared/styles/page.css";
+
+.checkout-page {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  min-height: 100dvh;
+  padding: var(--space-12) var(--space-5);
+  background: var(--accent-soft);
+}
+
+.checkout-wrap {
+  width: 100%;
+  max-width: 28rem;
+}
+
+.checkout-top {
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.checkout-card .card-body {
+  padding: var(--space-6);
+}
+
+.checkout-lines {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.checkout-line,
+.checkout-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-4);
+}
+
+.checkout-line {
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--bg-soft);
+}
+
+.checkout-line-name {
+  font-weight: var(--weight-medium);
+}
+
+.checkout-total {
+  padding-inline: var(--space-4);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+}
+
+.checkout-amount {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.checkout-note {
+  margin: 0;
+  padding-inline: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+@media (max-width: 30rem) {
+  .checkout-page {
+    padding: var(--space-6) var(--space-4);
+  }
+
+  .checkout-card .card-body {
+    padding: var(--space-5);
+  }
+}

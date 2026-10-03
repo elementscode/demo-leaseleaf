@@ -1,0 +1,114 @@
+import "./style.css";
+import { FieldErrors, ValidationError, redirect } from "@elements/app";
+import favicon from "#app/shared/assets/favicons/favicon.svg";
+import { LeafMark } from "#app/shared/templates/app-shell";
+import { MIN_PASSWORD } from "#app/shared/services/auth";
+import { day, ordinal, rent } from "#app/shared/format";
+import { AcceptForm, InviteDetails, acceptInvite } from "./services";
+
+interface Ui {
+  busy: boolean;
+  error: string;
+}
+
+function onSubmit(token: string, form: AcceptForm, ui: Ui): FieldErrors<AcceptForm> {
+  ui.busy = true;
+  ui.error = "";
+
+  try {
+    redirect(acceptInvite(token, form));
+    return {};
+  } catch (err: any) {
+    ui.busy = false;
+
+    if (err instanceof ValidationError && err.errors) {
+      return err.errors;
+    }
+
+    ui.error = err.message;
+    return {};
+  }
+}
+
+<html lang="en" class="page-invite" (
+  token: string,
+  invite: InviteDetails | null,
+  private form: AcceptForm = { name: invite?.tenantName ?? "", password: "" },
+  private errors: FieldErrors<AcceptForm> = {},
+  private ui: Ui = { busy: false, error: "" },
+)>
+  <head>
+    <title>Your invite · Leaseleaf</title>
+    <link rel="icon" type="image/svg+xml" href={favicon} />
+  </head>
+  <body>
+    <main class="invite-page center">
+      <div class="invite-card stack is-lg">
+        <a class="brand row" href="/"><LeafMark /> leaseleaf</a>
+
+        <div e:if={invite && invite.state === "open"} class="card">
+          <div class="card-body stack is-lg">
+            <div class="stack is-xs">
+              <h1 class="text-3xl">Welcome home</h1>
+              <p class="hint">{invite!.landlordName} invited you to manage your lease on Leaseleaf.</p>
+            </div>
+
+            <div class="invite-home">
+              <strong>{invite!.buildingName} · Unit {invite!.unitLabel}</strong>
+              <span class="hint">{invite!.address}</span>
+              <span>{rent(invite!.rentCents)} a month, due on the {ordinal(invite!.dueDay)}. Starts {day(invite!.startDate, true)}.</span>
+            </div>
+
+            <form class="stack" onsubmit={() => errors = onSubmit(token, form, ui)}>
+              <p e:if={ui.error} class="error" role="alert">{ui.error}</p>
+
+              <div class="field">
+                <label for="email">Email</label>
+                <input id="email" type="email" value={invite!.tenantEmail} readonly autocomplete="username">
+              </div>
+
+              <div class="field">
+                <label for="name">Your name</label>
+                <input id="name" value={form.name} autocomplete="name" class={[!!errors.name?.length && "is-error"]}>
+                <p e:for={m of errors.name ?? []} class="error">{m}</p>
+              </div>
+
+              <div class="field">
+                <label for="password">Choose a password</label>
+                <input id="password"
+                       type="password"
+                       value={form.password}
+                       autocomplete="new-password"
+                       minlength={MIN_PASSWORD}
+                       class={[!!errors.password?.length && "is-error"]}
+                       required>
+                <p class="hint">At least {MIN_PASSWORD} characters.</p>
+                <p e:for={m of errors.password ?? []} class="error">{m}</p>
+              </div>
+
+              <button type="submit" class="is-primary is-block" disabled={ui.busy}>
+                {ui.busy ? "Setting up…" : "Accept and sign in"}
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <div e:elseif={invite && invite.state === "accepted"} class="card">
+          <div class="card-body stack">
+            <h1 class="text-2xl">Invite already accepted</h1>
+            <p class="hint">Sign in with the email and password you chose.</p>
+            <a class="button is-primary" href="/signin">Sign in</a>
+          </div>
+        </div>
+
+        <div e:else class="card">
+          <div class="card-body stack">
+            <h1 class="text-2xl">This link has expired</h1>
+            <p class="hint">Invite links last 14 days. Ask your landlord to send a new one.</p>
+            <a class="button" href="/signin">Go to sign in</a>
+          </div>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

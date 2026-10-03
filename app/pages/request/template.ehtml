@@ -1,0 +1,224 @@
+import "./style.css";
+import { LiveView, session } from "@elements/app";
+import favicon from "#app/shared/assets/favicons/favicon.svg";
+import { AppShell } from "#app/shared/templates/app-shell";
+import { StatusPill, UrgencyPill } from "#app/shared/templates/request-card";
+import { CommentRow, RequestRow, RequestStatus, STATUSES, STATUS_LABEL, photoUrl } from "#app/shared/services/maintenance";
+import { day, when } from "#app/shared/format";
+
+interface Draft {
+  body: string;
+  error: string;
+}
+
+interface Schedule {
+  date: string;
+  error: string;
+}
+
+function initials(name: string): string {
+  return name.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase();
+}
+
+function stamp(date: Date): string {
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+}
+
+function tomorrow(): string {
+  let d = new Date(Date.now() + 86_400_000);
+
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function byTime(comments: LiveView<CommentRow>): CommentRow[] {
+  return comments.sort((a, b) => +a.createdAt - +b.createdAt);
+}
+
+function onSetStatus(requests: LiveView<RequestRow>, request: RequestRow, status: RequestStatus, schedule: Schedule) {
+  schedule.error = "";
+
+  if (status === "scheduled" && !schedule.date) {
+    schedule.error = "Pick the visit date first.";
+    return;
+  }
+
+  requests.update({
+    ...request,
+    status,
+    scheduledFor: status === "new" ? null : status === "scheduled" ? schedule.date : request.scheduledFor,
+    completedAt: status === "done" ? request.completedAt ?? new Date() : null,
+  });
+}
+
+function onReschedule(requests: LiveView<RequestRow>, request: RequestRow, schedule: Schedule) {
+  if (request.status === "scheduled" && schedule.date && schedule.date !== request.scheduledFor) {
+    requests.update({ ...request, scheduledFor: schedule.date });
+  }
+}
+
+function onComment(comments: LiveView<CommentRow>, draft: Draft, role: "landlord" | "tenant") {
+  let body = draft.body.trim();
+
+  if (!body) {
+    return;
+  }
+
+  draft.error = "";
+
+  try {
+    comments.insert({
+      body,
+      authorId: session.get("userId")!,
+      authorName: session.get("userName")!,
+      authorRole: role,
+      createdAt: new Date(),
+    }, () => draft.body = "");
+  } catch (err: any) {
+    draft.error = err.message;
+  }
+}
+
+<Timeline (request: RequestRow)>
+  <ol class="timeline">
+    <li class="is-reached">
+      <span>Filed</span>
+      <span class="hint">{stamp(request.createdAt)}</span>
+    </li>
+    <li class={[request.status !== "new" && "is-reached"]}>
+      <span>Scheduled</span>
+      <span class="hint" e:if={request.scheduledFor}>Visit on {day(request.scheduledFor!, true)}</span>
+      <span class="hint" e:else>Not yet</span>
+    </li>
+    <li class={[request.status === "done" && "is-reached"]}>
+      <span>Done</span>
+      <span class="hint" e:if={request.completedAt}>{stamp(request.completedAt!)}</span>
+      <span class="hint" e:else>Not yet</span>
+    </li>
+  </ol>
+</Timeline>
+
+<StatusControls (requests: LiveView<RequestRow>, request: RequestRow, private schedule: Schedule = { date: request.scheduledFor ?? tomorrow(), error: "" })>
+  <div class="stack">
+    <div class="status-picker button-group" role="group" aria-label="Status">
+      <button e:for={s of STATUSES}
+              type="button"
+              class={[request.status === s && "is-current"]}
+              aria-pressed={request.status === s}
+              onclick={() => onSetStatus(requests, request, s, schedule)}>
+        {STATUS_LABEL[s]}
+      </button>
+    </div>
+
+    <div class="field">
+      <label for="visit">Visit date</label>
+      <input id="visit" type="date" value={schedule.date} onchange={() => onReschedule(requests, request, schedule)}>
+      <p class="hint" e:if={request.status === "new"}>Pick a date, then press Scheduled. The tenant gets an email.</p>
+      <p class="hint" e:else>Changing the date while scheduled lets the tenant know.</p>
+      <p class="error" e:if={schedule.error}>{schedule.error}</p>
+    </div>
+  </div>
+</StatusControls>
+
+<html lang="en" class="page-request" (
+  id: string,
+  role: "landlord" | "tenant",
+  requests: LiveView<RequestRow>,
+  comments: LiveView<CommentRow>,
+  private draft: Draft = { body: "", error: "" },
+)>
+  <head>
+    <title>{requests.get(id)?.title ?? "Request"} · Leaseleaf</title>
+    <link rel="icon" type="image/svg+xml" href={favicon} />
+  </head>
+  <body>
+    <AppShell active="maintenance">
+      <div class="page-shell stack is-lg" e:if={requests.get(id)}>
+        <a class="request-back" href={role === "landlord" ? "/landlord/maintenance" : "/tenant/maintenance"}>← All requests</a>
+
+        <div class="stack is-sm">
+          <div class="cluster is-sm">
+            <StatusPill status={requests.get(id)!.status} />
+            <UrgencyPill urgency={requests.get(id)!.urgency} />
+          </div>
+          <h1>{requests.get(id)!.title}</h1>
+          <p class="hint">
+            {requests.get(id)!.buildingName} · Unit {requests.get(id)!.unitLabel} · filed by {requests.get(id)!.tenantName} {when(requests.get(id)!.createdAt)}
+          </p>
+        </div>
+
+        <div class="request-grid">
+          <div class="stack is-lg">
+            <section class="card">
+              <div class="card-body stack">
+                <p class="request-description">{requests.get(id)!.description}</p>
+
+                <div e:if={requests.get(id)!.photos.length > 0}
+                     class={["photo-grid", requests.get(id)!.photos.length === 1 && "is-single"]}>
+                  <a e:for={photo of requests.get(id)!.photos} href={photoUrl(photo)} target="_blank" rel="noopener">
+                    <img src={photoUrl(photo)} alt={`Photo of ${requests.get(id)!.title}`} width="400" height="300">
+                  </a>
+                </div>
+              </div>
+            </section>
+
+            <section class="card">
+              <div class="card-head">
+                <h2>Conversation</h2>
+              </div>
+              <div class="card-body stack is-lg">
+                <div class="thread" e:if={comments.length > 0}>
+                  <div e:for={c of byTime(comments)} class={["comment", c.authorRole === "landlord" && "is-landlord"]}>
+                    <span class="avatar" aria-hidden="true">{initials(c.authorName)}</span>
+                    <div class="comment-bubble">
+                      <div class="comment-head cluster">
+                        <strong>{c.authorName}</strong>
+                        <span e:if={c.authorRole === "landlord"}>Landlord</span>
+                        <span>{when(c.createdAt)}</span>
+                      </div>
+                      <p class="comment-body">{c.body}</p>
+                    </div>
+                  </div>
+                </div>
+                <p e:else class="hint">
+                  {role === "landlord" ? "No messages yet. Let the tenant know what happens next." : "No messages yet. Your landlord will reply here."}
+                </p>
+
+                <form class="composer" onsubmit={() => onComment(comments, draft, role)}>
+                  <label for="comment" class="visually-hidden">Message</label>
+                  <textarea id="comment"
+                            value={draft.body}
+                            placeholder={role === "landlord" ? "Write to the tenant…" : "Add a detail or ask a question…"}></textarea>
+                  <p class="error" e:if={draft.error}>{draft.error}</p>
+                  <div class="composer-foot row">
+                    <span class="hint">{role === "landlord" ? "The tenant is emailed when you reply." : "Your landlord sees this right away."}</span>
+                    <button type="submit" class="is-primary" disabled={!draft.body.trim()}>Send</button>
+                  </div>
+                </form>
+              </div>
+            </section>
+          </div>
+
+          <aside class="stack is-lg">
+            <section class="card" e:if={role === "landlord"}>
+              <div class="card-head">
+                <h2>Status</h2>
+              </div>
+              <div class="card-body">
+                <StatusControls {requests} request={requests.get(id)!} />
+              </div>
+            </section>
+
+            <section class="card">
+              <div class="card-head">
+                <h2>Progress</h2>
+              </div>
+              <div class="card-body">
+                <Timeline request={requests.get(id)!} />
+              </div>
+            </section>
+          </aside>
+        </div>
+      </div>
+    </AppShell>
+  </body>
+</html>

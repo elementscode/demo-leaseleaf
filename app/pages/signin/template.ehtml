@@ -1,0 +1,139 @@
+import "./style.css";
+import { redirect } from "@elements/app";
+import favicon from "#app/shared/assets/favicons/favicon.svg";
+import { signin } from "#app/shared/services/auth";
+import { LeafMark } from "#app/shared/templates/app-shell";
+
+export interface DemoLogin {
+  id: string;
+  email: string;
+  name: string;
+  role: "landlord" | "tenant";
+  place: string;
+}
+
+interface SigninForm {
+  email: string;
+  password: string;
+  error: string;
+  busy: boolean;
+}
+
+export const DEMO_PASSWORD = "leaseleaf";
+
+function onSubmit(form: SigninForm) {
+  form.busy = true;
+
+  try {
+    let home = signin(form.email, form.password);
+    form.error = "";
+    redirect(home);
+  } catch (err: any) {
+    form.error = err.message;
+    form.busy = false;
+  }
+}
+
+function useDemo(form: SigninForm, login: DemoLogin) {
+  form.email = login.email;
+  form.password = DEMO_PASSWORD;
+  onSubmit(form);
+}
+
+<Check>
+  <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+    <circle cx="10" cy="10" r="9" fill="currentColor" opacity="0.14"/>
+    <path d="M6 10.4l2.6 2.6L14 7.6" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+</Check>
+
+<html lang="en" class="page-signin" (
+  demo: DemoLogin[],
+  private form: SigninForm = { email: "", password: "", error: "", busy: false },
+)>
+  <head>
+    <title>Sign in · Leaseleaf</title>
+    <meta name="description" content="Rent, leases and repairs for small buildings.">
+    <link rel="icon" type="image/svg+xml" href={favicon} />
+  </head>
+  <body>
+    <main class="signin-layout">
+      <section class="signin-aside stack">
+        <a class="brand row" href="/">
+          <LeafMark size={32} />
+          leaseleaf
+        </a>
+
+        <div class="signin-pitch stack is-lg">
+          <h1>Rent, leases and repairs for a few good buildings.</h1>
+          <ul class="signin-points stack is-sm">
+            <li class="row is-start"><Check /> Tenants pay by card or set up autopay.</li>
+            <li class="row is-start"><Check /> Reminders go out three days before rent is due.</li>
+            <li class="row is-start"><Check /> Repair requests come with photos, and you reply in the thread.</li>
+          </ul>
+        </div>
+
+        <p class="hint">Payments by Stripe.</p>
+      </section>
+
+      <section class="signin-panel grid gap-8">
+        <form class="signin-form stack" onsubmit={() => onSubmit(form)}>
+          <div class="stack is-xs">
+            <h2>Sign in</h2>
+            <p class="hint">Landlords and invited tenants sign in here.</p>
+          </div>
+
+          <p e:if={form.error} class="error" role="alert">{form.error}</p>
+
+          <div class="field">
+            <label for="email">Email</label>
+            <input id="email"
+                   name="email"
+                   type="email"
+                   value={form.email}
+                   autocomplete="email"
+                   autocapitalize="none"
+                   spellcheck={false}
+                   placeholder="you@example.com"
+                   required>
+          </div>
+
+          <div class="field">
+            <label for="password">Password</label>
+            <input id="password"
+                   name="password"
+                   type="password"
+                   value={form.password}
+                   autocomplete="current-password"
+                   required>
+          </div>
+
+          <button type="submit" class="is-primary is-block" disabled={form.busy}>
+            {form.busy ? "Signing in…" : "Sign in"}
+          </button>
+        </form>
+
+        <div e:if={demo.length > 0} class="demo-logins card">
+          <div class="card-head">
+            <h2>Demo accounts</h2>
+          </div>
+          <div class="card-body stack is-sm">
+            <p class="hint">Every account uses the password <code>{DEMO_PASSWORD}</code>. Pick one to sign in.</p>
+            <ul class="stack is-xs">
+              <li e:for={login of demo}>
+                <button type="button" class="demo-login row" onclick={() => useDemo(form, login)}>
+                  <span class="demo-login-who stack">
+                    <span class="demo-login-name">{login.name}</span>
+                    <span class="demo-login-email">{login.email}</span>
+                  </span>
+                  <span e:if={login.role === "landlord"} class="pill is-accent">Landlord</span>
+                  <span e:else class="demo-login-where">{login.place}</span>
+                </button>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,27 @@
+import "./style.css";
+
+/** @email */
+<html (tenantName: string, amount: string, dueDate: string, place: string, autopay: boolean, cardLabel: string)>
+  <body class="email rent-reminder">
+    <div class="email-wrap">
+      <p class="email-brand">leaseleaf</p>
+      <h1>Rent is due {dueDate}</h1>
+      <p>Hi {tenantName}, this is a reminder that rent for {place} is due in three days.</p>
+
+      <div class="email-box">
+        <p class="email-amount">{amount}</p>
+        <p>Due {dueDate}</p>
+      </div>
+
+      <p e:if={autopay}>Autopay is on, so we will charge {cardLabel} on the due date. There is nothing you need to do.</p>
+      <div e:else>
+        <p><a class="email-button" href="/tenant">Pay rent</a></p>
+        <p>Tired of reminders? Turn on autopay from the same page.</p>
+      </div>
+
+      <div class="email-footer">
+        <p>Sent by Leaseleaf.</p>
+      </div>
+    </div>
+  </body>
+</html>

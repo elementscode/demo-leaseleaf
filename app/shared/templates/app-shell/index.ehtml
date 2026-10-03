@@ -1,0 +1,64 @@
+import "./style.css";
+import { redirect, session } from "@elements/app";
+import { signout } from "#app/shared/services/auth";
+
+interface NavLink {
+  href: string;
+  label: string;
+  key: string;
+}
+
+const LANDLORD: NavLink[] = [
+  { href: "/landlord", label: "Rent roll", key: "rent" },
+  { href: "/landlord/properties", label: "Properties", key: "properties" },
+  { href: "/landlord/maintenance", label: "Maintenance", key: "maintenance" },
+];
+
+const TENANT: NavLink[] = [
+  { href: "/tenant", label: "My lease", key: "lease" },
+  { href: "/tenant/maintenance", label: "Maintenance", key: "maintenance" },
+];
+
+function onSignout() {
+  signout();
+  redirect("/signin");
+}
+
+<LeafMark (size: number = 28)>
+  <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true">
+    <rect width="32" height="32" rx="8" fill="var(--accent)"/>
+    <path d="M9 23c0-9 5.5-14 15-15-0.5 9.5-5.5 15-14 15.2" fill="var(--accent-ink)"/>
+    <path d="M9 23.5c3-4.5 6.5-8 10.5-10.5" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+  </svg>
+</LeafMark>
+
+<AppShell (active: string)>
+  <div class="app">
+    <header class="shell-header">
+      <div class="shell-bar row">
+        <a class="brand row" href="/">
+          <LeafMark />
+          leaseleaf
+        </a>
+
+        <nav class="shell-nav row" aria-label="Main">
+          <a e:for={link of session.get("role") === "landlord" ? LANDLORD : TENANT}
+             href={link.href}
+             class={[link.key === active && "is-active"]}
+             aria-current={link.key === active ? "page" : undefined}>
+            {link.label}
+          </a>
+        </nav>
+
+        <div class="shell-user row">
+          <span class="shell-user-name">{session.get("userName")}</span>
+          <button class="is-ghost is-sm" onclick={() => onSignout()}>Sign out</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="app-main shell-main">
+      <slot/>
+    </main>
+  </div>
+</AppShell>

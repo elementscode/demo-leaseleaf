@@ -1,0 +1,83 @@
+import "./style.css";
+import { redirect } from "@elements/app";
+import favicon from "#app/shared/assets/favicons/favicon.svg";
+import { LeafMark } from "#app/shared/templates/app-shell";
+import { money } from "#app/shared/format";
+import { TestCheckout, payTestCharge, saveTestCard } from "./services";
+
+interface Ui {
+  busy: boolean;
+  error: string;
+}
+
+function onPay(checkout: TestCheckout, ui: Ui) {
+  ui.busy = true;
+  ui.error = "";
+
+  try {
+    redirect(checkout.kind === "rent" ? payTestCharge(checkout.id) : saveTestCard(checkout.id));
+  } catch (err: any) {
+    ui.error = err.message;
+    ui.busy = false;
+  }
+}
+
+<html lang="en" class="page-checkout-test" (checkout: TestCheckout, private ui: Ui = { busy: false, error: "" })>
+  <head>
+    <title>Checkout · Leaseleaf</title>
+    <link rel="icon" type="image/svg+xml" href={favicon} />
+  </head>
+  <body>
+    <main class="checkout-page">
+      <div class="checkout-wrap stack is-lg">
+        <div class="checkout-top row">
+          <a class="brand row" href="/tenant"><LeafMark /> leaseleaf</a>
+          <span class="pill is-warning"><span class="pill-dot"></span>Test mode</span>
+        </div>
+
+        <section class="card checkout-card">
+          <div class="card-body stack is-lg">
+            <div class="stack is-xs">
+              <p class="eyebrow">Checkout</p>
+              <h1 class="text-2xl">{checkout.heading}</h1>
+              <p class="hint">{checkout.email}</p>
+            </div>
+
+            <div class="checkout-lines">
+              <div class="checkout-line">
+                <span class="stack is-xs">
+                  <span class="checkout-line-name">{checkout.line}</span>
+                  <span class="hint">{checkout.detail}</span>
+                </span>
+                <span class="checkout-amount">{checkout.kind === "rent" ? money(checkout.totalCents) : "Saved card"}</span>
+              </div>
+
+              <div class="checkout-total">
+                <span>{checkout.kind === "rent" ? "Total" : "Due today"}</span>
+                <span class="checkout-amount">{money(checkout.totalCents)}</span>
+              </div>
+            </div>
+
+            <p e:if={ui.error} class="callout is-danger" role="alert">{ui.error}</p>
+
+            <div class="stack is-sm">
+              <button type="button"
+                      class={["is-primary is-lg is-block", ui.busy && "is-loading"]}
+                      disabled={ui.busy}
+                      onclick={() => onPay(checkout, ui)}>
+                {ui.busy ? "Processing…" : checkout.kind === "rent" ? `Pay ${money(checkout.totalCents)}` : "Save card and turn on autopay"}
+              </button>
+              <a class="button is-ghost is-block" href="/tenant">Cancel</a>
+            </div>
+          </div>
+        </section>
+
+        <p class="checkout-note">
+          No card is charged. This test checkout stands in for Stripe while the app has no key. Add
+          <code>STRIPE_SECRET_KEY</code> to <code>config/env/development.env</code> and this button opens
+          real Stripe Checkout.
+        </p>
+      </div>
+    </main>
+  </body>
+</html>

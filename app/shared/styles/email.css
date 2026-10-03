@@ -1,0 +1,44 @@
+@import "@elements/style/email";
+@import "./vars.css";
+
+.email .email-brand {
+  margin: 0 0 24px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f6b43;
+}
+
+.email .email-button {
+  display: inline-block;
+  padding: 12px 20px;
+  border-radius: 8px;
+  background: #1f7a4a;
+  color: #ffffff;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.email .email-box {
+  margin: 20px 0;
+  padding: 16px 20px;
+  border: 1px solid #dfe5e1;
+  border-radius: 10px;
+  background: #f5f8f6;
+}
+
+.email .email-box p {
+  margin: 4px 0;
+}
+
+.email .email-amount {
+  font-size: 28px;
+  font-weight: 700;
+  color: #14231b;
+}
+
+.email .email-quote {
+  margin: 16px 0;
+  padding: 4px 0 4px 16px;
+  border-left: 3px solid #1f7a4a;
+  color: #33413a;
+}

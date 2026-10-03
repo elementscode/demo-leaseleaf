@@ -1,0 +1,25 @@
+@import "#app/shared/styles/page.css";
+
+.invite-page {
+  min-height: 100dvh;
+  padding: var(--space-12) var(--space-5);
+  background: var(--accent-soft);
+}
+
+.invite-card {
+  width: 100%;
+  max-width: 30rem;
+}
+
+.invite-home {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--bg-soft);
+  border: 1px solid var(--rule);
+}
+
+.invite-home strong {
+  font-size: var(--text-lg);
+}

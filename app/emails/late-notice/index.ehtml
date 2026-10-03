@@ -1,0 +1,24 @@
+import "./style.css";
+
+/** @email */
+<html (tenantName: string, amount: string, dueDate: string, place: string, landlordName: string)>
+  <body class="email late-notice">
+    <div class="email-wrap">
+      <p class="email-brand">leaseleaf</p>
+      <h1>Your rent is past due</h1>
+      <p>Hi {tenantName}, we have not received rent for {place}. It was due {dueDate}.</p>
+
+      <div class="email-box">
+        <p class="email-amount">{amount}</p>
+        <p>Was due {dueDate}</p>
+      </div>
+
+      <p><a class="email-button" href="/tenant">Pay now</a></p>
+      <p>If you have already paid another way, or need to talk about a payment plan, reply to {landlordName} directly.</p>
+
+      <div class="email-footer">
+        <p>Sent by Leaseleaf for {landlordName}.</p>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,28 @@
+import "./style.css";
+import { RentRow } from "#app/shared/services/rent";
+import { day } from "#app/shared/format";
+
+export const METHOD_LABEL: Record<string, string> = {
+  card: "Card",
+  autopay: "Autopay",
+  check: "Check",
+  cash: "Cash",
+  transfer: "Bank transfer",
+};
+
+export function paidOn(row: RentRow): string {
+  if (!row.paidAt) {
+    return "";
+  }
+
+  return row.paidAt.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+<RentStatus (row: RentRow)>
+  <span e:switch={row.state} class="rent-status">
+    <span e:case="paid" class="pill is-success"><span class="pill-dot"></span>Paid</span>
+    <span e:case="processing" class="pill is-info"><span class="pill-dot"></span>Processing</span>
+    <span e:case="late" class="pill is-danger"><span class="pill-dot"></span>Late · {row.daysLate}d</span>
+    <span e:default class="pill is-warning"><span class="pill-dot"></span>Due {day(row.dueDate)}</span>
+  </span>
+</RentStatus>

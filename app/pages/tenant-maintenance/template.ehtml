@@ -1,0 +1,164 @@
+import "./style.css";
+import { File, FieldErrors, LiveView, ValidationError, redirect } from "@elements/app";
+import favicon from "#app/shared/assets/favicons/favicon.svg";
+import { AppShell } from "#app/shared/templates/app-shell";
+import { RequestCard } from "#app/shared/templates/request-card";
+import { RequestRow } from "#app/shared/services/maintenance";
+import { MAX_PHOTOS, RequestForm, submitRequest } from "./services";
+
+interface Ui {
+  busy: boolean;
+  error: string;
+}
+
+const URGENCY_OPTIONS = [
+  { value: "low", label: "Low", hint: "Whenever is convenient" },
+  { value: "normal", label: "Normal", hint: "Within a few days" },
+  { value: "urgent", label: "Urgent", hint: "No heat, water or a leak" },
+];
+
+function emptyForm(): RequestForm {
+  return { title: "", description: "", urgency: "normal", photos: [] as File[] };
+}
+
+function sizeOf(file: File): string {
+  return file.size > 1024 * 1024 ? `${(file.size / 1024 / 1024).toFixed(1)} MB` : `${Math.round(file.size / 1024)} KB`;
+}
+
+function onSubmit(form: RequestForm, ui: Ui): FieldErrors<RequestForm> {
+  ui.busy = true;
+  ui.error = "";
+
+  try {
+    let id = submitRequest(form);
+    redirect(`/maintenance/${id}`);
+    return {};
+  } catch (err: any) {
+    ui.busy = false;
+
+    if (err instanceof ValidationError) {
+      if (err.errors) {
+        return err.errors;
+      }
+
+      ui.error = err.message;
+      return {};
+    }
+
+    ui.error = err.message;
+    return {};
+  }
+}
+
+function open(requests: LiveView<RequestRow>): RequestRow[] {
+  return requests.filter((r) => r.status !== "done").sort((a, b) => +b.createdAt - +a.createdAt);
+}
+
+function closed(requests: LiveView<RequestRow>): RequestRow[] {
+  return requests.filter((r) => r.status === "done").sort((a, b) => +b.createdAt - +a.createdAt);
+}
+
+<html lang="en" class="page-tenant-maintenance" (
+  requests: LiveView<RequestRow>,
+  private form: RequestForm = emptyForm(),
+  private errors: FieldErrors<RequestForm> = {},
+  private ui: Ui = { busy: false, error: "" },
+)>
+  <head>
+    <title>Maintenance · Leaseleaf</title>
+    <link rel="icon" type="image/svg+xml" href={favicon} />
+  </head>
+  <body>
+    <AppShell active="maintenance">
+      <div class="page-shell stack is-xl">
+        <div class="stack is-xs">
+          <h1>Maintenance</h1>
+          <p class="lede">Tell us what needs fixing. Photos help us bring the right parts.</p>
+        </div>
+
+        <div class="tm-grid">
+          <section id="new" class="card">
+            <div class="card-head">
+              <h2>New request</h2>
+            </div>
+            <form class="card-body stack" onsubmit={() => errors = onSubmit(form, ui)}>
+              <p e:if={ui.error} class="error" role="alert">{ui.error}</p>
+
+              <div class="field">
+                <label for="title">What is wrong?</label>
+                <input id="title"
+                       value={form.title}
+                       placeholder="e.g. Bathroom sink is clogged"
+                       maxlength={120}
+                       class={[!!errors.title?.length && "is-error"]}>
+                <p e:for={msg of errors.title ?? []} class="error">{msg}</p>
+              </div>
+
+              <div class="field">
+                <label for="description">Details</label>
+                <textarea id="description"
+                          value={form.description}
+                          rows={4}
+                          placeholder="Where is it, when did it start, and anything you have tried."
+                          class={[!!errors.description?.length && "is-error"]}></textarea>
+                <p e:for={msg of errors.description ?? []} class="error">{msg}</p>
+              </div>
+
+              <div class="field" role="radiogroup" aria-label="Urgency">
+                <label id="urgency-label">Urgency</label>
+                <div class="urgency-options">
+                  <label e:for={opt of URGENCY_OPTIONS} class="urgency-option relative">
+                    <input type="radio" name="urgency" group={form.urgency} value={opt.value}>
+                    <span>{opt.label}</span>
+                    <small>{opt.hint}</small>
+                  </label>
+                </div>
+                <p e:for={msg of errors.urgency ?? []} class="error">{msg}</p>
+              </div>
+
+              <div class="field">
+                <label for="photos">Photos</label>
+                <label class="photo-picker relative" for="photos">
+                  <svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 7h3l2-2.5h6L17 7h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z"/>
+                    <circle cx="12" cy="12.5" r="3.5"/>
+                  </svg>
+                  <span e:if={form.photos.length === 0}>Add up to {MAX_PHOTOS} photos</span>
+                  <span e:else>{form.photos.length} {form.photos.length === 1 ? "photo" : "photos"} attached. Choose again to replace.</span>
+                  <input id="photos" type="file" multiple accept="image/*" value={form.photos}>
+                </label>
+                <ul e:if={form.photos.length > 0} class="photo-names stack is-xs">
+                  <li e:for={photo of form.photos}>{photo.name} · {sizeOf(photo)}</li>
+                </ul>
+                <p e:for={msg of errors.photos ?? []} class="error">{msg}</p>
+              </div>
+
+              <button type="submit" class="is-primary is-block" disabled={ui.busy}>
+                {ui.busy ? "Sending…" : "Send request"}
+              </button>
+            </form>
+          </section>
+
+          <section class="stack is-lg">
+            <div class="stack">
+              <h2 class="tm-section-title">Open</h2>
+              <div e:if={open(requests).length > 0} class="stack is-sm">
+                <RequestCard e:for={r of open(requests)} request={r} showTenant={false} showStatus={true} />
+              </div>
+              <div e:else class="tm-empty">
+                <p class="hint">No open requests. Everything is working.</p>
+              </div>
+            </div>
+
+            <div e:if={closed(requests).length > 0} class="stack">
+              <h2 class="tm-section-title">Done</h2>
+              <div class="stack is-sm">
+                <RequestCard e:for={r of closed(requests)} request={r} showTenant={false} showStatus={true} />
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </AppShell>
+  </body>
+</html>
