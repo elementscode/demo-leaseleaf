@@ -1,45 +1,12 @@
-![Leaseleaf, a property management app built with Elements: the landlord's October rent roll with collected, due and late totals and each unit's paid or due status.](https://elements.dev/demos/01a0f459-5f58-791f-8308-3a4551b6f012/poster?v=9af5ace84a5b)
+![Rent collection and repair requests, built by Claude Code on Elements: the landlord's October rent roll with collected, due and late totals and each unit's paid or due status.](https://elements.dev/demos/01a0f459-5f58-791f-8308-3a4551b6f012/poster?v=9af5ace84a5b)
 
-# Leaseleaf
+# Rent collection and repair requests, built by Claude Code on Elements
 
-> A demo app built with [Elements](https://elements.dev).
+> Leaseleaf is a full-stack app built with Claude Code on Elements.
 
 Tenants pay rent by card or autopay and report repairs with photos. The landlord sees a live rent roll and a repair queue.
 
-**Demo:** [Leaseleaf](https://elements.dev/demos/01a0f459-5f58-791f-8308-3a4551b6f012)
-
-## Agent specs
-
-- **Agent:** Claude Code, Opus 5.5 Medium
-- **Time:** 27 min
-- **Cost:** $9.27 at API rates, September 2026
-
-## Get started
-
-```bash
-elements create leaseleaf -scaffold=elementscode/demo-leaseleaf
-```
-
-## Demo accounts
-
-The seed creates a landlord, two buildings (Alder Court and Birch House) with
-eight units, seven tenants, three months of rent payments with two tenants
-behind, and a maintenance queue with photos and comments. Every date is
-relative to the day the seed runs. Every account's password is `leaseleaf`,
-and the sign-in page lists them.
-
-| Email                  | Role     | Unit              |
-| ---------------------- | -------- | ----------------- |
-| dana@leaseleaf.test    | landlord |                   |
-| priya@leaseleaf.test   | tenant   | Alder Court 1A    |
-| marcus@leaseleaf.test  | tenant   | Alder Court 1B    |
-| elena@leaseleaf.test   | tenant   | Alder Court 2A    |
-| tom@leaseleaf.test     | tenant   | Alder Court 2B    |
-| hannah@leaseleaf.test  | tenant   | Birch House 101   |
-| sam@leaseleaf.test     | tenant   | Birch House 102   |
-| grace@leaseleaf.test   | tenant   | Birch House 201   |
-
-Birch House 202 is vacant, so the landlord can try inviting a tenant.
+[Run this app on your machine](https://elements.dev/demos/01a0f459-5f58-791f-8308-3a4551b6f012). Use this demo as inspiration, or as the starting point for your own app. Your agent creates a new app with this one as the scaffold, and you prompt it to add whatever features you want.
 
 ## Payments
 
@@ -61,8 +28,6 @@ after, from a daily job at 9am. In development, emails are written to
 
 Leaseleaf needed a live rent roll, rent by card and autopay, a maintenance queue with photos and comments, tenant invites, and scheduled reminder emails. Each of those is a part of Elements, so the agent spent its 27 minutes on the property app itself.
 
-### What Elements gave the app
-
 - **Live rent and maintenance.** Rent charges, maintenance requests and their comments are LiveTables, so a payment shows as paid on the landlord's rent roll the moment it lands, and a tenant sees a request move to scheduled or done as the landlord changes it.
 
 - **Rent by card and autopay.** A tenant pays a month's rent through Stripe or saves a card for autopay, each with one `@rpc` call. Payments are recorded once whether the return page or Stripe's webhook arrives first. Until a Stripe key is set, the pay button opens a test checkout inside the app that records rent the same way, and in production the app registers its own webhook the first time a tenant pays.
@@ -75,16 +40,6 @@ Leaseleaf needed a live rent roll, rent by card and autopay, a maintenance queue
 
 - **Data from SQL files.** Migrations define the app and seed a landlord, two buildings with eight units, seven tenants, three months of rent with two tenants behind, and a maintenance queue with photos.
 
-### What the project server gave the agent
+## Why Elements
 
-The project server runs alongside the agent and answers as soon as a file is saved: it type-checks the templates, TypeScript and SQL, applies migrations and reruns the tests, so every question came back right away and the agent kept building.
-
-### What shipped
-
-The app type-checks with zero errors and all 35 tests pass. Every page works on desktop and phone. A real sandbox payment went through Stripe end to end.
-
-**Demo:** [Leaseleaf](https://elements.dev/demos/01a0f459-5f58-791f-8308-3a4551b6f012)
-
-## License
-
-MIT. See [LICENSE](LICENSE).
+Elements is an integrated full-stack app framework and a project server. The project server checks the agent's work as it builds: it type-checks the server and browser code, analyzes the program, applies migrations and runs the tests, then reports the results to the agent. A security mistake, such as calling a server-only function from the browser, is a compile error. The agent reads the report and fixes its own mistakes before it tells you a feature is done. The same checks run on every feature you ask for next.
