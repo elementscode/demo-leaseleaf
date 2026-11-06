@@ -3,7 +3,7 @@ import { LiveView } from "@elements/app";
 import { Alert } from "@elements/ui/alert";
 import { Badge } from "@elements/ui/badge";
 import { Button } from "@elements/ui/button";
-import { Card, CardAction, CardContent } from "@elements/ui/card";
+import { Card, CardContent } from "@elements/ui/card";
 import { DropdownMenu, DropdownMenuItem } from "@elements/ui/dropdown-menu";
 import { Progress } from "@elements/ui/progress";
 import { Table, TableCell, TableHead } from "@elements/ui/table";
@@ -156,7 +156,7 @@ function onRunCycle(ui: Ui) {
 
     <section>
       <Card title={monthName(month)} level={2}>
-        <CardAction slot="action"><span class="hint">Updates live as tenants pay</span></CardAction>
+        <span slot="action" class="hint">Updates live as tenants pay</span>
         <CardContent>
           <RollTable list={rows(charges, month)} {ui} label={`Rent for ${monthName(month)}`} />
           <p e:if={rows(charges, month).length === 0} class="hint">No charges for this month.</p>
@@ -166,7 +166,7 @@ function onRunCycle(ui: Ui) {
 
     <section e:if={earlierOwed(charges, month).length > 0}>
       <Card title="Still owed from earlier months" level={2}>
-        <CardAction slot="action"><Badge variant="danger">{rent(total(earlierOwed(charges, month)))}</Badge></CardAction>
+        <Badge slot="action" variant="danger">{rent(total(earlierOwed(charges, month)))}</Badge>
         <CardContent>
           <RollTable list={earlierOwed(charges, month)} {ui} label="Still owed from earlier months" showMonth={true} />
         </CardContent>
@@ -200,7 +200,7 @@ function onRunCycle(ui: Ui) {
         <Alert e:if={ui.notice} variant="success" role="status" description={ui.notice} />
         <Alert e:if={ui.error} variant="danger" description={ui.error} />
 
-        <Tabs value={ui.month} class="roll-tabs">
+        <Tabs value={ui.month}>
           <TabsList label="Month">
             <TabsTrigger e:for={m of months(charges)} value={m}>{monthName(m, true)}</TabsTrigger>
           </TabsList>
