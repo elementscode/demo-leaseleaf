@@ -56,11 +56,6 @@
   font-weight: var(--weight-medium);
 }
 
-.history-table td,
-.history-table th {
-  white-space: nowrap;
-}
-
 @media (max-width: 56rem) {
   .tenant-grid {
     grid-template-columns: 1fr;
