@@ -106,11 +106,6 @@
   min-width: 0;
 }
 
-/* keeps absolutely positioned labels (visually-hidden) inside the scroll box */
-.shell-main .overflow-auto {
-  position: relative;
-}
-
 .tenant-grid > *,
 .request-grid > *,
 .tm-grid > * {
