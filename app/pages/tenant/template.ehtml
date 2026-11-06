@@ -1,5 +1,12 @@
 import "./style.css";
 import { LiveView, redirect } from "@elements/app";
+import { Alert } from "@elements/ui/alert";
+import { Badge } from "@elements/ui/badge";
+import { Button } from "@elements/ui/button";
+import { Card, CardAction, CardContent } from "@elements/ui/card";
+import { Empty } from "@elements/ui/empty";
+import { Item, ItemActions, ItemContent, ItemDescription, ItemGroup, ItemTitle } from "@elements/ui/item";
+import { Table, TableCell, TableHead } from "@elements/ui/table";
 import favicon from "#app/shared/assets/favicons/favicon.svg";
 import { AppShell } from "#app/shared/templates/app-shell";
 import { RentStatus, METHOD_LABEL, paidOn } from "#app/shared/templates/rent-status";
@@ -13,10 +20,10 @@ interface Ui {
   error: string;
 }
 
-const FLASH: Record<string, { tone: string; title: string; body: string }> = {
-  paid: { tone: "is-success", title: "Payment received", body: "Thanks! A receipt is on its way to your inbox." },
-  autopay: { tone: "is-success", title: "Autopay is on", body: "We will charge your card on each due date and email you a receipt." },
-  pending: { tone: "is-info", title: "Payment processing", body: "Stripe is still confirming it. This page updates as soon as it clears." },
+const FLASH: Record<string, { tone: "success" | "info"; title: string; body: string }> = {
+  paid: { tone: "success", title: "Payment received", body: "Thanks! A receipt is on its way to your inbox." },
+  autopay: { tone: "success", title: "Autopay is on", body: "We will charge your card on each due date and email you a receipt." },
+  pending: { tone: "info", title: "Payment processing", body: "Stripe is still confirming it. This page updates as soon as it clears." },
 };
 
 function byMonthDesc(charges: LiveView<RentRow>): RentRow[] {
@@ -91,9 +98,9 @@ function onToggleAutopay(ui: Ui, lease: Lease, on: boolean) {
 }
 
 <BalanceCard (charges: LiveView<RentRow>, lease: Lease, testMode: boolean, ui: Ui)>
-  <div e:if={nextCharge(charges)}
-       class={["balance-card card", lateCount(charges) > 0 && "is-late"]}>
-    <div class="card-body stack">
+  <Card e:if={nextCharge(charges)}
+        class={["balance-card", lateCount(charges) > 0 && "is-late"].filter(Boolean).join(" ")}>
+    <CardContent class="stack">
       <div class="row is-baseline" style="justify-content: space-between">
         <p class="eyebrow">{lateCount(charges) > 0 ? "Past due" : `${monthName(nextCharge(charges)!.month)} rent`}</p>
         <RentStatus row={nextCharge(charges)!} />
@@ -118,34 +125,35 @@ function onToggleAutopay(ui: Ui, lease: Lease, on: boolean) {
       </p>
 
       <div class="cluster" e:if={nextCharge(charges)!.state !== "processing"}>
-        <button class={["is-lg", !(lease.autopay && nextCharge(charges)!.state === "due") && "is-primary"]}
-                disabled={ui.busy !== ""}
+        <Button size="lg"
+                variant={lease.autopay && nextCharge(charges)!.state === "due" ? "outline" : "primary"}
+                loading={ui.busy === nextCharge(charges)!.id}
+                disabled={ui.busy !== "" && ui.busy !== nextCharge(charges)!.id}
                 onclick={() => onPay(ui, nextCharge(charges)!)}>
-          {ui.busy === nextCharge(charges)!.id ? "Opening checkout…" : lease.autopay && nextCharge(charges)!.state === "due" ? "Pay early instead" : `Pay ${rent(nextCharge(charges)!.amountCents)} now`}
-        </button>
+          {lease.autopay && nextCharge(charges)!.state === "due" ? "Pay early instead" : `Pay ${rent(nextCharge(charges)!.amountCents)} now`}
+        </Button>
         <span class="hint" e:if={testMode}>Test checkout, no card needed.</span>
         <span class="hint" e:else>Secure checkout by Stripe.</span>
       </div>
-    </div>
-  </div>
+    </CardContent>
+  </Card>
 
-  <div e:else class="balance-card card is-clear">
-    <div class="card-body stack">
+  <Card e:else class="balance-card is-clear">
+    <CardContent class="stack">
       <p class="eyebrow">Balance</p>
       <p class="balance-amount">$0</p>
       <p class="hint">You are all paid up. Rent of {rent(lease.rentCents)} is due on the {ordinal(lease.dueDay)} of each month.</p>
-    </div>
-  </div>
+    </CardContent>
+  </Card>
 </BalanceCard>
 
 <AutopayCard (lease: Lease, ui: Ui)>
-  <div class="card">
-    <div class="card-head row" style="justify-content: space-between">
-      <h2>Autopay</h2>
-      <span e:if={lease.autopay} class="pill is-success"><span class="pill-dot"></span>On</span>
-      <span e:else class="pill">Off</span>
-    </div>
-    <div class="card-body stack">
+  <Card title="Autopay" level={2}>
+    <CardAction slot="action">
+      <Badge e:if={lease.autopay} variant="success" dot>On</Badge>
+      <Badge e:else variant="secondary">Off</Badge>
+    </CardAction>
+    <CardContent class="stack">
       <p e:if={lease.autopay} class="hint">
         {lease.cardLabel} is charged {rent(lease.rentCents)} on the {ordinal(lease.dueDay)} of each month. You get a receipt each time.
       </p>
@@ -157,18 +165,22 @@ function onToggleAutopay(ui: Ui, lease: Lease, on: boolean) {
       </p>
 
       <div class="cluster">
-        <button e:if={lease.autopay} class="is-ghost" disabled={ui.busy !== ""} onclick={() => onToggleAutopay(ui, lease, false)}>
+        <Button e:if={lease.autopay} variant="ghost" disabled={ui.busy !== ""} onclick={() => onToggleAutopay(ui, lease, false)}>
           Turn off autopay
-        </button>
-        <button e:elseif={lease.cardLabel} class="is-primary" disabled={ui.busy !== ""} onclick={() => onToggleAutopay(ui, lease, true)}>
+        </Button>
+        <Button e:elseif={lease.cardLabel} variant="primary" disabled={ui.busy !== ""} onclick={() => onToggleAutopay(ui, lease, true)}>
           Turn autopay back on
-        </button>
-        <button e:if={!lease.autopay} class={[!lease.cardLabel && "is-primary"]} disabled={ui.busy !== ""} onclick={() => onSetupAutopay(ui)}>
-          {ui.busy === "autopay" ? "Opening checkout…" : lease.cardLabel ? "Use a different card" : "Set up autopay"}
-        </button>
+        </Button>
+        <Button e:if={!lease.autopay}
+                variant={lease.cardLabel ? "outline" : "primary"}
+                loading={ui.busy === "autopay"}
+                disabled={ui.busy !== "" && ui.busy !== "autopay"}
+                onclick={() => onSetupAutopay(ui)}>
+          {lease.cardLabel ? "Use a different card" : "Set up autopay"}
+        </Button>
       </div>
-    </div>
-  </div>
+    </CardContent>
+  </Card>
 </AutopayCard>
 
 <html lang="en" class="page-tenant" (
@@ -192,87 +204,80 @@ function onToggleAutopay(ui: Ui, lease: Lease, on: boolean) {
           <p class="lede">{lease!.address}</p>
         </div>
 
-        <div e:if={FLASH[done]} class={["callout", FLASH[done].tone]} role="status">
-          <div class="callout-title">{FLASH[done].title}</div>
-          <div class="callout-body">{FLASH[done].body}</div>
-        </div>
+        <Alert e:if={FLASH[done]} variant={FLASH[done].tone} role="status" title={FLASH[done].title} description={FLASH[done].body} />
 
-        <p e:if={ui.error} class="callout is-danger" role="alert">{ui.error}</p>
+        <Alert e:if={ui.error} variant="danger" description={ui.error} />
 
-        <div e:if={!lease || !charges} class="card">
-          <div class="card-body stack">
-            <h2>No active lease</h2>
-            <p class="hint">Your landlord has not activated a lease for you yet. Check your email for an invite link.</p>
-          </div>
-        </div>
+        <Card e:if={!lease || !charges}>
+          <Empty title="No active lease" description="Your landlord has not activated a lease for you yet. Check your email for an invite link." />
+        </Card>
 
         <div e:else class="tenant-grid">
           <div class="stack is-lg">
             <BalanceCard charges={charges!} lease={lease!} {testMode} {ui} />
 
-            <section class="card">
-              <div class="card-head">
-                <h2>Payment history</h2>
-              </div>
-              <div class="card-body overflow-auto">
-                <table class="history-table">
-                  <thead>
-                    <tr>
-                      <th>Month</th>
-                      <th class="num">Amount</th>
-                      <th>Status</th>
-                      <th class="hide-sm">Paid</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr e:for={c of byMonthDesc(charges!)}>
-                      <td>{monthName(c.month)}</td>
-                      <td class="num">{rent(c.amountCents)}</td>
-                      <td><RentStatus row={c} /></td>
-                      <td class="hide-sm text-ink-soft">
-                        {c.paidAt ? `${paidOn(c)} · ${METHOD_LABEL[c.method ?? "card"] ?? c.method}` : "–"}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+            <section>
+              <Card title="Payment history" level={2}>
+                <CardContent>
+                  <Table label="Payment history" class="history-table">
+                    <table>
+                      <thead>
+                        <tr>
+                          <TableHead>Month</TableHead>
+                          <TableHead align="end">Amount</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead class="hide-sm">Paid</TableHead>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr e:for={c of byMonthDesc(charges!)}>
+                          <TableCell>{monthName(c.month)}</TableCell>
+                          <TableCell align="end">{rent(c.amountCents)}</TableCell>
+                          <TableCell><RentStatus row={c} /></TableCell>
+                          <TableCell class="hide-sm text-ink-soft">
+                            {c.paidAt ? `${paidOn(c)} · ${METHOD_LABEL[c.method ?? "card"] ?? c.method}` : "–"}
+                          </TableCell>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </Table>
+                </CardContent>
+              </Card>
             </section>
           </div>
 
           <div class="stack is-lg">
             <AutopayCard lease={lease!} {ui} />
 
-            <section class="card">
-              <div class="card-head">
-                <h2>Your lease</h2>
-              </div>
-              <div class="card-body">
-                <dl class="facts">
-                  <div><dt>Monthly rent</dt><dd>{rent(lease!.rentCents)}</dd></div>
-                  <div><dt>Due</dt><dd>The {ordinal(lease!.dueDay)}</dd></div>
-                  <div><dt>Unit</dt><dd>{lease!.unitLabel} · {lease!.bedrooms} bd / {lease!.bathrooms} ba</dd></div>
-                  <div><dt>Since</dt><dd>{day(lease!.startDate, true)}</dd></div>
-                </dl>
-              </div>
+            <section>
+              <Card title="Your lease" level={2}>
+                <CardContent>
+                  <dl class="facts">
+                    <div><dt>Monthly rent</dt><dd>{rent(lease!.rentCents)}</dd></div>
+                    <div><dt>Due</dt><dd>The {ordinal(lease!.dueDay)}</dd></div>
+                    <div><dt>Unit</dt><dd>{lease!.unitLabel} · {lease!.bedrooms} bd / {lease!.bathrooms} ba</dd></div>
+                    <div><dt>Since</dt><dd>{day(lease!.startDate, true)}</dd></div>
+                  </dl>
+                </CardContent>
+              </Card>
             </section>
 
-            <section class="card">
-              <div class="card-head row" style="justify-content: space-between">
-                <h2>Maintenance</h2>
-                <a class="button is-sm" href="/tenant/maintenance#new">New request</a>
-              </div>
-              <div class="card-body">
-                <div e:if={openRequests(requests).length > 0}>
-                  <a e:for={r of openRequests(requests)} class="request-link" href={`/maintenance/${r.id}`}>
-                    <span class="stack is-xs">
-                      <span class="request-link-title">{r.title}</span>
-                      <span class="hint">Filed {when(r.createdAt)}</span>
-                    </span>
-                    <span class={["pill", r.status === "scheduled" ? "is-info" : "is-warning"]}>{STATUS_LABEL[r.status]}</span>
-                  </a>
-                </div>
-                <p e:else class="hint">Nothing open. Something broken? Send a request with photos.</p>
-              </div>
+            <section>
+              <Card title="Maintenance" level={2}>
+                <CardAction slot="action"><Button size="sm" href="/tenant/maintenance#new">New request</Button></CardAction>
+                <CardContent>
+                  <ItemGroup e:if={openRequests(requests).length > 0} label="Open requests">
+                    <Item e:for={r of openRequests(requests)} href={`/maintenance/${r.id}`} size="sm">
+                      <ItemContent>
+                        <ItemTitle>{r.title}</ItemTitle>
+                        <ItemDescription>Filed {when(r.createdAt)}</ItemDescription>
+                      </ItemContent>
+                      <ItemActions><Badge variant={r.status === "scheduled" ? "info" : "warning"}>{STATUS_LABEL[r.status]}</Badge></ItemActions>
+                    </Item>
+                  </ItemGroup>
+                  <p e:else class="hint">Nothing open. Something broken? Send a request with photos.</p>
+                </CardContent>
+              </Card>
             </section>
           </div>
         </div>
