@@ -95,18 +95,6 @@
   font-weight: var(--weight-medium);
 }
 
-.status-picker {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.status-picker button.is-current {
-  background: var(--accent-soft);
-  color: var(--accent-deep);
-  border-color: var(--accent-edge);
-  font-weight: var(--weight-semibold);
-}
-
 .thread {
   display: grid;
   gap: var(--space-4);
@@ -118,19 +106,7 @@
   gap: var(--space-3);
 }
 
-.avatar {
-  display: grid;
-  place-items: center;
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: 50%;
-  font-size: var(--text-xs);
-  font-weight: var(--weight-semibold);
-  background: var(--bg-muted);
-  color: var(--ink-soft);
-}
-
-.comment.is-landlord .avatar {
+.comment.is-landlord .avatar-fallback {
   background: var(--accent-soft);
   color: var(--accent-deep);
 }
@@ -166,10 +142,6 @@
 .composer {
   display: grid;
   gap: var(--space-2);
-}
-
-.composer textarea {
-  min-height: 5rem;
 }
 
 .composer-foot {

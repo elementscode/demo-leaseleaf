@@ -1,5 +1,12 @@
 import "./style.css";
 import { LiveView, session } from "@elements/app";
+import { Avatar } from "@elements/ui/avatar";
+import { Button } from "@elements/ui/button";
+import { Card, CardContent } from "@elements/ui/card";
+import { DatePicker } from "@elements/ui/date-picker";
+import { Field } from "@elements/ui/field";
+import { Textarea } from "@elements/ui/textarea";
+import { ToggleGroup, ToggleGroupItem } from "@elements/ui/toggle-group";
 import favicon from "#app/shared/assets/favicons/favicon.svg";
 import { AppShell } from "#app/shared/templates/app-shell";
 import { StatusPill, UrgencyPill } from "#app/shared/templates/request-card";
@@ -14,10 +21,6 @@ interface Draft {
 interface Schedule {
   date: string;
   error: string;
-}
-
-function initials(name: string): string {
-  return name.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase();
 }
 
 function stamp(date: Date): string {
@@ -99,23 +102,20 @@ function onComment(comments: LiveView<CommentRow>, draft: Draft, role: "landlord
 
 <StatusControls (requests: LiveView<RequestRow>, request: RequestRow, private schedule: Schedule = { date: request.scheduledFor ?? tomorrow(), error: "" })>
   <div class="stack">
-    <div class="status-picker button-group" role="group" aria-label="Status">
-      <button e:for={s of STATUSES}
-              type="button"
-              class={[request.status === s && "is-current"]}
-              aria-pressed={request.status === s}
-              onclick={() => onSetStatus(requests, request, s, schedule)}>
-        {STATUS_LABEL[s]}
-      </button>
-    </div>
+    <ToggleGroup value={request.status}
+                 label="Status"
+                 variant="outline"
+                 spacing={0}
+                 class="status-picker"
+                 onValueChange={(next, details) => { details.cancel(); if (next) onSetStatus(requests, request, next as RequestStatus, schedule); }}>
+      <ToggleGroupItem e:for={s of STATUSES} value={s}>{STATUS_LABEL[s]}</ToggleGroupItem>
+    </ToggleGroup>
 
-    <div class="field">
-      <label for="visit">Visit date</label>
-      <input id="visit" type="date" value={schedule.date} onchange={() => onReschedule(requests, request, schedule)}>
-      <p class="hint" e:if={request.status === "new"}>Pick a date, then press Scheduled. The tenant gets an email.</p>
-      <p class="hint" e:else>Changing the date while scheduled lets the tenant know.</p>
-      <p class="error" e:if={schedule.error}>{schedule.error}</p>
-    </div>
+    <Field label="Visit date"
+           description={request.status === "new" ? "Pick a date, then press Scheduled. The tenant gets an email." : "Changing the date while scheduled lets the tenant know."}
+           error={schedule.error}>
+      <DatePicker value={schedule.date} block onValueChange={(date) => { schedule.date = date; onReschedule(requests, request, schedule); }} />
+    </Field>
   </div>
 </StatusControls>
 
@@ -148,8 +148,8 @@ function onComment(comments: LiveView<CommentRow>, draft: Draft, role: "landlord
 
         <div class="request-grid">
           <div class="stack is-lg">
-            <section class="card">
-              <div class="card-body stack">
+            <Card>
+              <CardContent class="stack">
                 <p class="request-description">{requests.get(id)!.description}</p>
 
                 <div e:if={requests.get(id)!.photos.length > 0}
@@ -158,63 +158,61 @@ function onComment(comments: LiveView<CommentRow>, draft: Draft, role: "landlord
                     <img src={photoUrl(photo)} alt={`Photo of ${requests.get(id)!.title}`} width="400" height="300">
                   </a>
                 </div>
-              </div>
-            </section>
+              </CardContent>
+            </Card>
 
-            <section class="card">
-              <div class="card-head">
-                <h2>Conversation</h2>
-              </div>
-              <div class="card-body stack is-lg">
-                <div class="thread" e:if={comments.length > 0}>
-                  <div e:for={c of byTime(comments)} class={["comment", c.authorRole === "landlord" && "is-landlord"]}>
-                    <span class="avatar" aria-hidden="true">{initials(c.authorName)}</span>
-                    <div class="comment-bubble">
-                      <div class="comment-head cluster">
-                        <strong>{c.authorName}</strong>
-                        <span e:if={c.authorRole === "landlord"}>Landlord</span>
-                        <span>{when(c.createdAt)}</span>
+            <section>
+              <Card title="Conversation" level={2}>
+                <CardContent class="stack is-lg">
+                  <div class="thread" e:if={comments.length > 0}>
+                    <div e:for={c of byTime(comments)} class={["comment", c.authorRole === "landlord" && "is-landlord"]}>
+                      <Avatar alt={c.authorName} size="sm" attrs={{ "aria-hidden": "true" }} />
+                      <div class="comment-bubble">
+                        <div class="comment-head cluster">
+                          <strong>{c.authorName}</strong>
+                          <span e:if={c.authorRole === "landlord"}>Landlord</span>
+                          <span>{when(c.createdAt)}</span>
+                        </div>
+                        <p class="comment-body">{c.body}</p>
                       </div>
-                      <p class="comment-body">{c.body}</p>
                     </div>
                   </div>
-                </div>
-                <p e:else class="hint">
-                  {role === "landlord" ? "No messages yet. Let the tenant know what happens next." : "No messages yet. Your landlord will reply here."}
-                </p>
+                  <p e:else class="hint">
+                    {role === "landlord" ? "No messages yet. Let the tenant know what happens next." : "No messages yet. Your landlord will reply here."}
+                  </p>
 
-                <form class="composer" onsubmit={() => onComment(comments, draft, role)}>
-                  <label for="comment" class="visually-hidden">Message</label>
-                  <textarea id="comment"
-                            value={draft.body}
-                            placeholder={role === "landlord" ? "Write to the tenant…" : "Add a detail or ask a question…"}></textarea>
-                  <p class="error" e:if={draft.error}>{draft.error}</p>
-                  <div class="composer-foot row">
-                    <span class="hint">{role === "landlord" ? "The tenant is emailed when you reply." : "Your landlord sees this right away."}</span>
-                    <button type="submit" class="is-primary" disabled={!draft.body.trim()}>Send</button>
-                  </div>
-                </form>
-              </div>
+                  <form class="composer" onsubmit={() => onComment(comments, draft, role)}>
+                    <Field error={draft.error} reserveError={false}>
+                      <Textarea value={draft.body}
+                                rows={3}
+                                placeholder={role === "landlord" ? "Write to the tenant…" : "Add a detail or ask a question…"}
+                                attrs={{ "aria-label": "Message" }} />
+                    </Field>
+                    <div class="composer-foot row">
+                      <span class="hint">{role === "landlord" ? "The tenant is emailed when you reply." : "Your landlord sees this right away."}</span>
+                      <Button type="submit" variant="primary" disabled={!draft.body.trim()}>Send</Button>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
             </section>
           </div>
 
           <aside class="stack is-lg">
-            <section class="card" e:if={role === "landlord"}>
-              <div class="card-head">
-                <h2>Status</h2>
-              </div>
-              <div class="card-body">
-                <StatusControls {requests} request={requests.get(id)!} />
-              </div>
+            <section e:if={role === "landlord"}>
+              <Card title="Status" level={2}>
+                <CardContent>
+                  <StatusControls {requests} request={requests.get(id)!} />
+                </CardContent>
+              </Card>
             </section>
 
-            <section class="card">
-              <div class="card-head">
-                <h2>Progress</h2>
-              </div>
-              <div class="card-body">
-                <Timeline request={requests.get(id)!} />
-              </div>
+            <section>
+              <Card title="Progress" level={2}>
+                <CardContent>
+                  <Timeline request={requests.get(id)!} />
+                </CardContent>
+              </Card>
             </section>
           </aside>
         </div>
