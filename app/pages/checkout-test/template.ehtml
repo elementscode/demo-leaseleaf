@@ -1,5 +1,9 @@
 import "./style.css";
 import { redirect } from "@elements/app";
+import { Alert } from "@elements/ui/alert";
+import { Badge } from "@elements/ui/badge";
+import { Button } from "@elements/ui/button";
+import { Card, CardContent } from "@elements/ui/card";
 import favicon from "#app/shared/assets/favicons/favicon.svg";
 import { LeafMark } from "#app/shared/templates/app-shell";
 import { money } from "#app/shared/format";
@@ -32,11 +36,12 @@ function onPay(checkout: TestCheckout, ui: Ui) {
       <div class="checkout-wrap stack is-lg">
         <div class="checkout-top row">
           <a class="brand row" href="/tenant"><LeafMark /> leaseleaf</a>
-          <span class="pill is-warning"><span class="pill-dot"></span>Test mode</span>
+          <Badge variant="warning" dot>Test mode</Badge>
         </div>
 
-        <section class="card checkout-card">
-          <div class="card-body stack is-lg">
+        <section>
+          <Card class="checkout-card">
+          <CardContent class="stack is-lg">
             <div class="stack is-xs">
               <p class="eyebrow">Checkout</p>
               <h1 class="text-2xl">{checkout.heading}</h1>
@@ -58,18 +63,16 @@ function onPay(checkout: TestCheckout, ui: Ui) {
               </div>
             </div>
 
-            <p e:if={ui.error} class="callout is-danger" role="alert">{ui.error}</p>
+            <Alert e:if={ui.error} variant="danger" description={ui.error} />
 
             <div class="stack is-sm">
-              <button type="button"
-                      class={["is-primary is-lg is-block", ui.busy && "is-loading"]}
-                      disabled={ui.busy}
-                      onclick={() => onPay(checkout, ui)}>
-                {ui.busy ? "Processing…" : checkout.kind === "rent" ? `Pay ${money(checkout.totalCents)}` : "Save card and turn on autopay"}
-              </button>
-              <a class="button is-ghost is-block" href="/tenant">Cancel</a>
+              <Button variant="primary" size="lg" block loading={ui.busy} onclick={() => onPay(checkout, ui)}>
+                {checkout.kind === "rent" ? `Pay ${money(checkout.totalCents)}` : "Save card and turn on autopay"}
+              </Button>
+              <Button variant="ghost" block href="/tenant">Cancel</Button>
             </div>
-          </div>
+          </CardContent>
+          </Card>
         </section>
 
         <p class="checkout-note">
