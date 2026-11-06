@@ -106,7 +106,6 @@ function onComment(comments: LiveView<CommentRow>, draft: Draft, role: "landlord
                  label="Status"
                  variant="outline"
                  spacing={0}
-                 class="status-picker"
                  onValueChange={(next, details) => { details.cancel(); if (next) onSetStatus(requests, request, next as RequestStatus, schedule); }}>
       <ToggleGroupItem e:for={s of STATUSES} value={s}>{STATUS_LABEL[s]}</ToggleGroupItem>
     </ToggleGroup>

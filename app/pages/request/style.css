@@ -106,9 +106,9 @@
   gap: var(--space-3);
 }
 
-.comment.is-landlord .avatar-fallback {
-  background: var(--accent-soft);
-  color: var(--accent-deep);
+.comment.is-landlord .avatar {
+  --avatar-fallback-bg: var(--accent-soft);
+  --avatar-fallback-ink: var(--accent-deep);
 }
 
 .comment-bubble {
