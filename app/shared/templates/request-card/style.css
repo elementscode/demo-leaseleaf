@@ -21,6 +21,15 @@
   border-left: 3px solid var(--danger);
 }
 
+/* inside a board card, which draws the surface */
+.request-card.is-bare {
+  flex: 1;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+
 .request-thumb {
   width: 4.5rem;
   height: 4.5rem;

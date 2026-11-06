@@ -1,5 +1,8 @@
 import "./style.css";
 import { LiveView } from "@elements/app";
+import { Badge } from "@elements/ui/badge";
+import { Empty } from "@elements/ui/empty";
+import { Kanban, KanbanBoard, KanbanColumn, KanbanItem, KanbanNav, KanbanNavItem } from "@elements/ui/kanban";
 import favicon from "#app/shared/assets/favicons/favicon.svg";
 import { AppShell } from "#app/shared/templates/app-shell";
 import { RequestCard } from "#app/shared/templates/request-card";
@@ -28,6 +31,10 @@ function lane(requests: LiveView<RequestRow>, status: RequestStatus): RequestRow
   return list.sort((a, b) => URGENCY_RANK[a.urgency] - URGENCY_RANK[b.urgency] || +a.createdAt - +b.createdAt);
 }
 
+function lanes(requests: LiveView<RequestRow>): Record<RequestStatus, RequestRow[]> {
+  return { new: lane(requests, "new"), scheduled: lane(requests, "scheduled"), done: lane(requests, "done") };
+}
+
 function urgentOpen(requests: LiveView<RequestRow>): number {
   return requests.filter((r) => r.urgency === "urgent" && r.status !== "done").length;
 }
@@ -46,21 +53,30 @@ function urgentOpen(requests: LiveView<RequestRow>): number {
             <h1>Repair queue</h1>
           </div>
           <div class="cluster is-sm">
-            <span e:if={urgentOpen(requests) > 0} class="pill is-danger"><span class="pill-dot"></span>{urgentOpen(requests)} urgent</span>
-            <span class="pill">{requests.filter((r) => r.status !== "done").length} open</span>
+            <Badge e:if={urgentOpen(requests) > 0} variant="danger" dot>{urgentOpen(requests)} urgent</Badge>
+            <Badge variant="secondary">{requests.filter((r) => r.status !== "done").length} open</Badge>
           </div>
         </div>
 
-        <div class="board">
-          <section e:for={status of STATUSES} class="lane" aria-label={STATUS_LABEL[status]}>
-            <div class="lane-head row">
-              <h2>{STATUS_LABEL[status]}</h2>
-              <span class="lane-count pill">{requests.filter((r) => r.status === status).length}</span>
-            </div>
-            <RequestCard e:for={r of lane(requests, status)} request={r} />
-            <p e:if={lane(requests, status).length === 0} class="lane-empty">{EMPTY[status]}</p>
-          </section>
-        </div>
+        <Kanban value={lanes(requests)} label="Repair queue" class="board">
+          <KanbanNav label="Lanes">
+            <KanbanNavItem e:for={status of STATUSES} value={status}>{STATUS_LABEL[status]}</KanbanNavItem>
+          </KanbanNav>
+          <KanbanBoard>
+            <KanbanColumn e:for={status of STATUSES}
+                          value={status}
+                          title={STATUS_LABEL[status]}
+                          count={requests.filter((r) => r.status === status).length}>
+              <KanbanItem e:for={r of lane(requests, status)}
+                          value={r.id}
+                          label={r.title}
+                          class={r.urgency === "urgent" && r.status !== "done" ? "is-urgent" : ""}>
+                <RequestCard request={r} bare />
+              </KanbanItem>
+              <Empty e:if={lane(requests, status).length === 0} variant="outline" description={EMPTY[status]} />
+            </KanbanColumn>
+          </KanbanBoard>
+        </Kanban>
       </div>
     </AppShell>
   </body>

@@ -7,46 +7,11 @@
   gap: var(--space-4);
 }
 
+/* three lanes fill the page; narrower boards scroll, phones get one lane */
 .board {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-5);
-  align-items: start;
+  --kanban-column-width: max(18rem, calc((100% - 2 * var(--surface-gap)) / 3));
 }
 
-.lane {
-  display: grid;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  border-radius: var(--radius-surface);
-  background: var(--bg-soft);
-  border: 1px solid var(--rule);
-}
-
-.lane-head {
-  justify-content: space-between;
-}
-
-.lane-head h2 {
-  margin: 0;
-  font-size: var(--text-md);
-}
-
-.lane-count {
-  font-variant-numeric: tabular-nums;
-}
-
-.lane-empty {
-  padding: var(--space-6) var(--space-3);
-  text-align: center;
-  font-size: var(--text-sm);
-  color: var(--ink-soft);
-  border: 1px dashed var(--rule);
-  border-radius: var(--radius-md);
-}
-
-@media (max-width: 64rem) {
-  .board {
-    grid-template-columns: 1fr;
-  }
+.board .kanban-item.is-urgent {
+  border-left: 3px solid var(--danger);
 }

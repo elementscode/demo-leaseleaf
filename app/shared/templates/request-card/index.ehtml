@@ -1,25 +1,26 @@
 import "./style.css";
+import { Badge } from "@elements/ui/badge";
 import { RequestRow, URGENCY_LABEL, photoUrl } from "#app/shared/services/maintenance";
 import { day, when } from "#app/shared/format";
 
 <UrgencyPill (urgency: RequestRow["urgency"])>
   <span e:switch={urgency}>
-    <span e:case="urgent" class="pill is-danger"><span class="pill-dot"></span>Urgent</span>
-    <span e:case="normal" class="pill">Normal</span>
-    <span e:default class="pill">{URGENCY_LABEL[urgency]}</span>
+    <Badge e:case="urgent" variant="danger" dot>Urgent</Badge>
+    <Badge e:case="normal" variant="secondary">Normal</Badge>
+    <Badge e:default variant="secondary">{URGENCY_LABEL[urgency]}</Badge>
   </span>
 </UrgencyPill>
 
 <StatusPill (status: RequestRow["status"])>
   <span e:switch={status}>
-    <span e:case="new" class="pill is-warning"><span class="pill-dot"></span>New</span>
-    <span e:case="scheduled" class="pill is-info"><span class="pill-dot"></span>Scheduled</span>
-    <span e:default class="pill is-success"><span class="pill-dot"></span>Done</span>
+    <Badge e:case="new" variant="warning" dot>New</Badge>
+    <Badge e:case="scheduled" variant="info" dot>Scheduled</Badge>
+    <Badge e:default variant="success" dot>Done</Badge>
   </span>
 </StatusPill>
 
-<RequestCard (request: RequestRow, showTenant: boolean = true, showStatus: boolean = false)>
-  <a class={["request-card", request.urgency === "urgent" && request.status !== "done" && "is-urgent"]}
+<RequestCard (request: RequestRow, showTenant: boolean = true, showStatus: boolean = false, bare: boolean = false)>
+  <a class={["request-card", bare && "is-bare", !bare && request.urgency === "urgent" && request.status !== "done" && "is-urgent"]}
      href={`/maintenance/${request.id}`}>
     <img e:if={request.photos.length > 0}
          class="request-thumb"
