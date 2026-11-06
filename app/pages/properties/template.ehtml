@@ -163,7 +163,7 @@ function onAddBuilding(state: State, form: BuildingForm): FieldErrors<BuildingFo
           <Input type="email" value={form.email} attrs={{ autocapitalize: "none", spellcheck: "false" }} />
         </Field>
         <Field label="Monthly rent ($)" errors={errors.rent ?? []}>
-          <NumberInput value={form.rent} step={1} buttons="none" />
+          <NumberInput value={form.rent} min={1} step={1} buttons="none" />
         </Field>
         <Field label="Rent due on day" errors={errors.dueDay ?? []}>
           <NumberInput value={form.dueDay} min={1} max={28} buttons="none" />

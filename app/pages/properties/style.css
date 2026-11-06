@@ -28,11 +28,6 @@
   color: var(--ink-soft);
 }
 
-.unit-table th,
-.unit-table td {
-  vertical-align: middle;
-}
-
 .unit-label {
   font-size: var(--text-md);
   font-weight: var(--weight-semibold);
