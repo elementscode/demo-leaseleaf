@@ -18,12 +18,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-.building-head {
-  justify-content: space-between;
-  gap: var(--space-4);
-  flex-wrap: wrap;
-}
-
 .building-head h2 {
   font-size: var(--text-xl);
   margin: 0;
@@ -34,19 +28,9 @@
   color: var(--ink-soft);
 }
 
-.unit-table {
-  width: 100%;
-}
-
 .unit-table th,
 .unit-table td {
   vertical-align: middle;
-}
-
-.unit-table .num {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
 }
 
 .unit-label {
@@ -91,10 +75,6 @@
   padding: var(--space-2) 0;
 }
 
-.invite-form .is-span {
-  grid-column: 1 / -1;
-}
-
 .invite-link {
   gap: var(--space-2);
   padding: var(--space-3);
@@ -109,6 +89,17 @@
   white-space: nowrap;
   min-width: 0;
   flex: 1;
+}
+
+.invite-actions {
+  justify-content: flex-end;
+  align-self: center;
+  grid-column: -2;
+  gap: var(--space-2);
+}
+
+.form-actions {
+  gap: var(--space-2);
 }
 
 .inline-form {
@@ -150,6 +141,10 @@
     display: grid;
     grid-template-columns: 5.5rem minmax(0, 1fr);
     padding-block: var(--space-2);
+  }
+
+  .unit-table tbody tr.invite-row {
+    display: block;
   }
 
   .unit-table tbody td {

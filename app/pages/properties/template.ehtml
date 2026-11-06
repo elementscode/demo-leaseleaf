@@ -1,5 +1,14 @@
 import "./style.css";
 import { FieldErrors, ValidationError } from "@elements/app";
+import { Alert } from "@elements/ui/alert";
+import { Badge } from "@elements/ui/badge";
+import { Button } from "@elements/ui/button";
+import { Card, CardAction, CardContent } from "@elements/ui/card";
+import { DatePicker } from "@elements/ui/date-picker";
+import { Field } from "@elements/ui/field";
+import { Input } from "@elements/ui/input";
+import { NumberInput } from "@elements/ui/number-input";
+import { Table, TableCell, TableHead } from "@elements/ui/table";
 import favicon from "#app/shared/assets/favicons/favicon.svg";
 import { AppShell } from "#app/shared/templates/app-shell";
 import { ordinal, rent, day } from "#app/shared/format";
@@ -145,137 +154,118 @@ function onAddBuilding(state: State, form: BuildingForm): FieldErrors<BuildingFo
 
 <InviteRow (state: State, unit: UnitRow, private form: InviteForm = emptyInvite(unit.id), private errors: FieldErrors<InviteForm> = {})>
   <tr class="invite-row">
-    <td colspan={6}>
+    <TableCell colspan={6}>
       <form class="invite-form" onsubmit={() => errors = onInvite(state, form)}>
-        <div class="field">
-          <label for={`name-${unit.id}`}>Tenant name</label>
-          <input id={`name-${unit.id}`} value={form.name} autocomplete="off" class={[!!errors.name?.length && "is-error"]}>
-          <p e:for={m of errors.name ?? []} class="error">{m}</p>
-        </div>
-        <div class="field">
-          <label for={`email-${unit.id}`}>Email</label>
-          <input id={`email-${unit.id}`} type="email" value={form.email} autocapitalize="none" spellcheck={false} class={[!!errors.email?.length && "is-error"]}>
-          <p e:for={m of errors.email ?? []} class="error">{m}</p>
-        </div>
-        <div class="field">
-          <label for={`rent-${unit.id}`}>Monthly rent ($)</label>
-          <input id={`rent-${unit.id}`} type="number" min="1" step="1" value={form.rent} class={[!!errors.rent?.length && "is-error"]}>
-          <p e:for={m of errors.rent ?? []} class="error">{m}</p>
-        </div>
-        <div class="field">
-          <label for={`due-${unit.id}`}>Rent due on day</label>
-          <input id={`due-${unit.id}`} type="number" min="1" max="28" value={form.dueDay} class={[!!errors.dueDay?.length && "is-error"]}>
-          <p e:for={m of errors.dueDay ?? []} class="error">{m}</p>
-        </div>
-        <div class="field">
-          <label for={`start-${unit.id}`}>Lease starts</label>
-          <input id={`start-${unit.id}`} type="date" value={form.startDate} class={[!!errors.startDate?.length && "is-error"]}>
-          <p e:for={m of errors.startDate ?? []} class="error">{m}</p>
-        </div>
-        <div class="field row is-end" style="justify-content: flex-end; gap: var(--space-2)">
-          <button type="button" class="is-ghost" onclick={() => state.inviting = ""}>Cancel</button>
-          <button type="submit" class="is-primary">Send invite</button>
+        <Field label="Tenant name" errors={errors.name ?? []}>
+          <Input value={form.name} attrs={{ autocomplete: "off" }} />
+        </Field>
+        <Field label="Email" errors={errors.email ?? []}>
+          <Input type="email" value={form.email} attrs={{ autocapitalize: "none", spellcheck: "false" }} />
+        </Field>
+        <Field label="Monthly rent ($)" errors={errors.rent ?? []}>
+          <NumberInput value={form.rent} step={1} buttons="none" />
+        </Field>
+        <Field label="Rent due on day" errors={errors.dueDay ?? []}>
+          <NumberInput value={form.dueDay} min={1} max={28} buttons="none" />
+        </Field>
+        <Field label="Lease starts" errors={errors.startDate ?? []}>
+          <DatePicker value={form.startDate} block />
+        </Field>
+        <div class="invite-actions row">
+          <Button variant="ghost" onclick={() => state.inviting = ""}>Cancel</Button>
+          <Button type="submit" variant="primary">Send invite</Button>
         </div>
       </form>
-    </td>
+    </TableCell>
   </tr>
 </InviteRow>
 
 <UnitLine (state: State, unit: UnitRow)>
   <tr>
-    <td>
+    <TableCell>
       <span class="unit-label">{unit.label}</span>
       <span class="unit-size">{unit.bedrooms} bd · {unit.bathrooms} ba</span>
-    </td>
-    <td>
+    </TableCell>
+    <TableCell>
       <div e:if={unit.leaseStatus} class="tenant-cell">
         <span>{unit.tenantName}</span>
         <small>{unit.tenantEmail}</small>
       </div>
       <span e:else class="vacant">Vacant</span>
-    </td>
-    <td class="num hide-sm">{unit.rentCents ? rent(unit.rentCents) : ""}</td>
-    <td class="hide-sm">{unit.dueDay ? `The ${ordinal(unit.dueDay)}` : ""}</td>
-    <td>
+    </TableCell>
+    <TableCell align="end" class="hide-sm">{unit.rentCents ? rent(unit.rentCents) : ""}</TableCell>
+    <TableCell class="hide-sm">{unit.dueDay ? `The ${ordinal(unit.dueDay)}` : ""}</TableCell>
+    <TableCell>
       <div class="cluster is-xs">
-        <span e:if={unit.leaseStatus === "active"} class="pill is-success">Active</span>
-        <span e:elseif={unit.leaseStatus === "invited"} class="pill is-warning">Invited</span>
-        <span e:else class="pill">Vacant</span>
-        <span e:if={unit.autopay} class="pill is-accent">Autopay</span>
-        <span e:if={unit.owedCents > 0} class="pill is-danger">Owes {rent(unit.owedCents)}</span>
-        <a e:if={unit.openRequests > 0} class="pill is-info" href="/landlord/maintenance">{unit.openRequests} open {unit.openRequests === 1 ? "repair" : "repairs"}</a>
+        <Badge e:if={unit.leaseStatus === "active"} variant="success">Active</Badge>
+        <Badge e:elseif={unit.leaseStatus === "invited"} variant="warning">Invited</Badge>
+        <Badge e:else variant="secondary">Vacant</Badge>
+        <Badge e:if={unit.autopay} variant="accent">Autopay</Badge>
+        <Badge e:if={unit.owedCents > 0} variant="danger">Owes {rent(unit.owedCents)}</Badge>
+        <Badge e:if={unit.openRequests > 0} variant="info" href="/landlord/maintenance">{unit.openRequests} open {unit.openRequests === 1 ? "repair" : "repairs"}</Badge>
       </div>
-    </td>
-    <td>
+    </TableCell>
+    <TableCell>
       <div class="unit-actions row">
-        <button e:if={!unit.leaseStatus && state.inviting !== unit.id} class="is-sm is-primary" onclick={() => state.inviting = unit.id}>
+        <Button e:if={!unit.leaseStatus && state.inviting !== unit.id} size="sm" variant="primary" onclick={() => state.inviting = unit.id}>
           Invite tenant
-        </button>
+        </Button>
         <span e:if={unit.leaseStatus === "active" && unit.startDate} class="hint">Since {day(unit.startDate!, true)}</span>
-        <button e:if={unit.leaseStatus === "invited"} class="is-sm" onclick={() => onResend(state, unit)}>Resend</button>
-        <button e:if={unit.leaseStatus === "invited"} class="is-sm is-ghost" onclick={() => onCancel(state, unit)}>Cancel</button>
+        <Button e:if={unit.leaseStatus === "invited"} size="sm" onclick={() => onResend(state, unit)}>Resend</Button>
+        <Button e:if={unit.leaseStatus === "invited"} size="sm" variant="ghost" onclick={() => onCancel(state, unit)}>Cancel</Button>
       </div>
-    </td>
+    </TableCell>
   </tr>
   <tr e:if={unit.leaseStatus === "invited" && linkFor(state, unit)} class="invite-row">
-    <td colspan={6}>
+    <TableCell colspan={6}>
       <div class="invite-link row">
         <span class="hint">Invite link</span>
         <code>{linkFor(state, unit)}</code>
-        <button class="is-sm" onclick={() => onCopy(state, linkFor(state, unit), unit.id)}>
+        <Button size="sm" onclick={() => onCopy(state, linkFor(state, unit), unit.id)}>
           {state.copied === unit.id ? "Copied" : "Copy"}
-        </button>
+        </Button>
       </div>
-    </td>
+    </TableCell>
   </tr>
   <InviteRow e:if={state.inviting === unit.id} {state} {unit} />
 </UnitLine>
 
 <AddUnit (state: State, building: BuildingRow, private form: UnitForm = { buildingId: building.id, label: "", bedrooms: 1, bathrooms: 1 }, private errors: FieldErrors<UnitForm> = {})>
   <form class="inline-form" onsubmit={() => errors = onAddUnit(state, form)}>
-    <div class="field">
-      <label for={`unit-${building.id}`}>Unit</label>
-      <input id={`unit-${building.id}`} value={form.label} placeholder="e.g. 3B" class={[!!errors.label?.length && "is-error"]}>
-      <p e:for={m of errors.label ?? []} class="error">{m}</p>
-    </div>
-    <div class="field">
-      <label for={`beds-${building.id}`}>Bedrooms</label>
-      <input id={`beds-${building.id}`} type="number" min="0" max="10" value={form.bedrooms}>
-      <p e:for={m of errors.bedrooms ?? []} class="error">{m}</p>
-    </div>
-    <div class="field">
-      <label for={`baths-${building.id}`}>Bathrooms</label>
-      <input id={`baths-${building.id}`} type="number" min="0.5" max="10" step="0.5" value={form.bathrooms}>
-      <p e:for={m of errors.bathrooms ?? []} class="error">{m}</p>
-    </div>
-    <div class="row" style="gap: var(--space-2)">
-      <button type="button" class="is-ghost" onclick={() => state.addingUnit = ""}>Cancel</button>
-      <button type="submit" class="is-primary">Add unit</button>
+    <Field reserveError={false} label="Unit" errors={errors.label ?? []}>
+      <Input value={form.label} placeholder="e.g. 3B" />
+    </Field>
+    <Field reserveError={false} label="Bedrooms" errors={errors.bedrooms ?? []}>
+      <NumberInput value={form.bedrooms} min={0} max={10} buttons="none" />
+    </Field>
+    <Field reserveError={false} label="Bathrooms" errors={errors.bathrooms ?? []}>
+      <NumberInput value={form.bathrooms} min={0.5} max={10} step={0.5} buttons="none" />
+    </Field>
+    <div class="form-actions row">
+      <Button variant="ghost" onclick={() => state.addingUnit = ""}>Cancel</Button>
+      <Button type="submit" variant="primary">Add unit</Button>
     </div>
   </form>
 </AddUnit>
 
 <AddBuilding (state: State, private form: BuildingForm = { name: "", address: "" }, private errors: FieldErrors<BuildingForm> = {})>
-  <section class="card">
-    <div class="card-head">
-      <h2>New building</h2>
-    </div>
-    <form class="card-body building-form" onsubmit={() => errors = onAddBuilding(state, form)}>
-      <div class="field">
-        <label for="building-name">Name</label>
-        <input id="building-name" value={form.name} placeholder="e.g. Cedar Flats" class={[!!errors.name?.length && "is-error"]}>
-        <p e:for={m of errors.name ?? []} class="error">{m}</p>
-      </div>
-      <div class="field">
-        <label for="building-address">Address</label>
-        <input id="building-address" value={form.address} placeholder="Street address" class={[!!errors.address?.length && "is-error"]}>
-        <p e:for={m of errors.address ?? []} class="error">{m}</p>
-      </div>
-      <div class="row" style="gap: var(--space-2)">
-        <button type="button" class="is-ghost" onclick={() => state.addingBuilding = false}>Cancel</button>
-        <button type="submit" class="is-primary">Add building</button>
-      </div>
-    </form>
+  <section>
+    <Card title="New building" level={2}>
+      <CardContent>
+        <form class="building-form" onsubmit={() => errors = onAddBuilding(state, form)}>
+          <Field reserveError={false} label="Name" errors={errors.name ?? []}>
+            <Input value={form.name} placeholder="e.g. Cedar Flats" />
+          </Field>
+          <Field reserveError={false} label="Address" errors={errors.address ?? []}>
+            <Input value={form.address} placeholder="Street address" />
+          </Field>
+          <div class="form-actions row">
+            <Button variant="ghost" onclick={() => state.addingBuilding = false}>Cancel</Button>
+            <Button type="submit" variant="primary">Add building</Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   </section>
 </AddBuilding>
 
@@ -300,48 +290,48 @@ function onAddBuilding(state: State, form: BuildingForm): FieldErrors<BuildingFo
               <span><strong>{rent(monthlyRent(state))}</strong> monthly rent</span>
             </div>
           </div>
-          <button e:if={!state.addingBuilding} onclick={() => state.addingBuilding = true}>Add building</button>
+          <Button e:if={!state.addingBuilding} onclick={() => state.addingBuilding = true}>Add building</Button>
         </div>
 
-        <div e:if={state.notice} class="callout is-success" role="status">
-          <div class="callout-body">{state.notice}</div>
-        </div>
-        <div e:if={state.error} class="callout is-danger" role="alert">
-          <div class="callout-body">{state.error}</div>
-        </div>
+        <Alert e:if={state.notice} variant="success" role="status" description={state.notice} />
+        <Alert e:if={state.error} variant="danger" description={state.error} />
 
         <AddBuilding e:if={state.addingBuilding} {state} />
 
-        <section e:for={building of state.buildings} class="card">
-          <div class="card-head building-head row">
-            <div class="stack is-xs">
-              <h2>{building.name}</h2>
-              <span class="building-address">{building.address}</span>
+        <section e:for={building of state.buildings}>
+          <Card>
+            <div class="card-head building-head">
+              <div class="stack is-xs">
+                <h2>{building.name}</h2>
+                <span class="building-address">{building.address}</span>
+              </div>
+              <CardAction>
+                <Button e:if={state.addingUnit !== building.id} size="sm" variant="ghost" onclick={() => state.addingUnit = building.id}>Add unit</Button>
+              </CardAction>
             </div>
-            <button e:if={state.addingUnit !== building.id} class="is-sm is-ghost" onclick={() => state.addingUnit = building.id}>Add unit</button>
-          </div>
-          <div class="card-body stack">
-            <AddUnit e:if={state.addingUnit === building.id} {state} {building} />
+            <CardContent class="stack">
+              <AddUnit e:if={state.addingUnit === building.id} {state} {building} />
 
-            <div class="overflow-auto" e:if={building.units.length > 0}>
-              <table class="unit-table">
-                <thead>
-                  <tr>
-                    <th>Unit</th>
-                    <th>Tenant</th>
-                    <th class="num hide-sm">Rent</th>
-                    <th class="hide-sm">Due</th>
-                    <th>Status</th>
-                    <th><span class="visually-hidden">Actions</span></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <UnitLine e:for={unit of building.units} {state} {unit} />
-                </tbody>
-              </table>
-            </div>
-            <p e:else class="hint">No units yet. Add the first one.</p>
-          </div>
+              <Table e:if={building.units.length > 0} label={`Units in ${building.name}`}>
+                <table class="unit-table">
+                  <thead>
+                    <tr>
+                      <TableHead>Unit</TableHead>
+                      <TableHead>Tenant</TableHead>
+                      <TableHead align="end" class="hide-sm">Rent</TableHead>
+                      <TableHead class="hide-sm">Due</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead><span class="visually-hidden">Actions</span></TableHead>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <UnitLine e:for={unit of building.units} {state} {unit} />
+                  </tbody>
+                </table>
+              </Table>
+              <p e:else class="hint">No units yet. Add the first one.</p>
+            </CardContent>
+          </Card>
         </section>
       </div>
     </AppShell>
