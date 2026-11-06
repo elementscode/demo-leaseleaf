@@ -62,7 +62,7 @@ function urgentOpen(requests: LiveView<RequestRow>): number {
           <KanbanNav label="Lanes">
             <KanbanNavItem e:for={status of STATUSES} value={status}>{STATUS_LABEL[status]}</KanbanNavItem>
           </KanbanNav>
-          <KanbanBoard>
+          <KanbanBoard fill>
             <KanbanColumn e:for={status of STATUSES}
                           value={status}
                           title={STATUS_LABEL[status]}

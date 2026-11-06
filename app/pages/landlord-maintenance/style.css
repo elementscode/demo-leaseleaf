@@ -7,9 +7,8 @@
   gap: var(--space-4);
 }
 
-/* three lanes fill the page; narrower boards scroll, phones get one lane */
 .board {
-  --kanban-column-width: max(18rem, calc((100% - 2 * var(--surface-gap)) / 3));
+  --kanban-column-width: 18rem;
 }
 
 .board .kanban-item.is-urgent {
