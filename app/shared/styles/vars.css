@@ -18,7 +18,6 @@
     --accent-edge: var(--brand-200);
     --link-c: 0.123;
     --link-h: 155;
-    --item-selected: var(--brand-100);
   }
 
   @media (prefers-color-scheme: dark) {
@@ -28,7 +27,6 @@
       --accent-soft: var(--brand-900);
       --accent-ink: var(--brand-950);
       --accent-edge: var(--brand-700);
-      --item-selected: var(--brand-900);
     }
   }
 
@@ -38,6 +36,5 @@
     --accent-soft: var(--brand-900);
     --accent-ink: var(--brand-950);
     --accent-edge: var(--brand-700);
-    --item-selected: var(--brand-900);
   }
 }
