@@ -1,4 +1,5 @@
 import "./style.css";
+import { Badge } from "@elements/ui/badge";
 import { RentRow } from "#app/shared/services/rent";
 import { day } from "#app/shared/format";
 
@@ -20,9 +21,9 @@ export function paidOn(row: RentRow): string {
 
 <RentStatus (row: RentRow)>
   <span e:switch={row.state} class="rent-status">
-    <span e:case="paid" class="pill is-success"><span class="pill-dot"></span>Paid</span>
-    <span e:case="processing" class="pill is-info"><span class="pill-dot"></span>Processing</span>
-    <span e:case="late" class="pill is-danger"><span class="pill-dot"></span>Late · {row.daysLate}d</span>
-    <span e:default class="pill is-warning"><span class="pill-dot"></span>Due {day(row.dueDate)}</span>
+    <Badge e:case="paid" variant="success" dot>Paid</Badge>
+    <Badge e:case="processing" variant="info" dot>Processing</Badge>
+    <Badge e:case="late" variant="danger" dot>Late · {row.daysLate}d</Badge>
+    <Badge e:default variant="warning" dot>Due {day(row.dueDate)}</Badge>
   </span>
 </RentStatus>

@@ -7,14 +7,6 @@
   flex-wrap: wrap;
 }
 
-.roll-tabs .tab-list {
-  overflow-x: auto;
-}
-
-.roll-tabs .tab {
-  white-space: nowrap;
-}
-
 .stats {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -46,32 +38,10 @@
   color: var(--danger-ink);
 }
 
-.stat progress {
-  width: 100%;
-  margin-top: var(--space-2);
-}
-
-.roll-table {
-  width: 100%;
-}
-
 .roll-table th,
 .roll-table td {
   white-space: nowrap;
   vertical-align: middle;
-}
-
-.roll-table tbody tr + tr {
-  border-top: 0;
-}
-
-.roll-table tbody tr:nth-child(even) {
-  background: var(--bg-soft);
-}
-
-.roll-table .num {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
 }
 
 .roll-table tr.is-late td:first-child {
@@ -92,51 +62,8 @@
   gap: var(--space-2);
 }
 
-.record {
-  position: relative;
-}
-
-.record summary {
-  list-style: none;
-  font-size: var(--text-sm);
-  color: var(--accent-deep);
-}
-
-.record summary::-webkit-details-marker {
-  display: none;
-}
-
-.record-menu {
-  position: absolute;
-  right: 0;
-  z-index: 5;
-  display: grid;
-  gap: var(--space-1);
-  min-width: 11rem;
+.stat .progress {
   margin-top: var(--space-2);
-  padding: var(--space-2);
-  border: 1px solid var(--rule);
-  border-radius: var(--radius-md);
-  background: var(--bg);
-  box-shadow: var(--shadow-md);
-}
-
-.record-menu button {
-  justify-content: flex-start;
-}
-
-.flash-live {
-  animation: roll-flash 1.6s ease-out;
-}
-
-@keyframes roll-flash {
-  from {
-    background: var(--success-soft);
-  }
-
-  to {
-    background: transparent;
-  }
 }
 
 @media (max-width: 56rem) {
