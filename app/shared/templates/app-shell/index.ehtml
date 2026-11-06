@@ -1,6 +1,7 @@
 import "./style.css";
 import { redirect, session } from "@elements/app";
 import { signout } from "#app/shared/services/auth";
+import { Button } from "@elements/ui/button";
 
 interface NavLink {
   href: string;
@@ -52,7 +53,7 @@ function onSignout() {
 
         <div class="shell-user row">
           <span class="shell-user-name">{session.get("userName")}</span>
-          <button class="is-ghost is-sm" onclick={() => onSignout()}>Sign out</button>
+          <Button variant="ghost" size="sm" onclick={() => onSignout()}>Sign out</Button>
         </div>
       </div>
     </header>
