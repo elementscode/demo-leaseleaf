@@ -1,4 +1,4 @@
-import { App, getEnv, redirect, session } from "@elements/app";
+import { App, env, redirect, session } from "@elements/app";
 import { RentCycleJob } from "#app/jobs/rent-cycle";
 import config from "#config";
 import { homeFor } from "#app/shared/services/auth";
@@ -18,7 +18,7 @@ import servePhoto from "#app/routes/photos";
 import notFound from "#app/pages/errors/not-found";
 import unhandled from "#app/pages/errors/unhandled";
 
-if (getEnv() === "production" && !stripeConfigured()) {
+if (env() === "production" && !stripeConfigured()) {
   throw new Error("STRIPE_SECRET_KEY is required in production.");
 }
 

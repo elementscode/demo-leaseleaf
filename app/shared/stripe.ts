@@ -1,5 +1,5 @@
 import Stripe from "stripe";
-import { getEnv } from "@elements/app";
+import { env } from "@elements/app";
 import config from "#config";
 
 let client: Stripe | undefined;
@@ -14,7 +14,7 @@ export function stripeConfigured(): boolean {
  * @server
  */
 export function testCheckout(): boolean {
-  return !stripeConfigured() && getEnv() !== "production";
+  return !stripeConfigured() && env() !== "production";
 }
 
 /** @server */

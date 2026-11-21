@@ -1,4 +1,4 @@
-import { checkoutDb, getAppUrl, getEnv, sql } from "@elements/app";
+import { checkoutDb, getAppUrl, env, sql } from "@elements/app";
 import config from "#config";
 import { stripe } from "#app/shared/stripe";
 
@@ -22,7 +22,7 @@ function webhookUrl(): string {
 export async function ensureWebhook(): Promise<void> {
   let url = webhookUrl();
 
-  if (getEnv() !== "production" || ensured === url) {
+  if (env() !== "production" || ensured === url) {
     return;
   }
 
@@ -73,7 +73,7 @@ export async function ensureWebhook(): Promise<void> {
 }
 
 export function webhookSecret(): string {
-  if (getEnv() !== "production") {
+  if (env() !== "production") {
     return config.stripe.webhookSecret;
   }
 
